@@ -255,7 +255,7 @@ export default function ThemePage() {
               <label className="w-28 text-sm text-gray-300 shrink-0">{label}</label>
               <input
                 type="url"
-                value={(theme.social as Record<string, string>)?.[key] ?? ''}
+                value={(theme.social as unknown as Record<string, string>)?.[key] ?? ''}
                 onChange={(e) => setSocial(key, e.target.value)}
                 placeholder={placeholder}
                 className="flex-1 bg-gray-800 border border-gray-700 text-gray-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500"

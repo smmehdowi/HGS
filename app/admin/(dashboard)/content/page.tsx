@@ -208,7 +208,9 @@ const SECTIONS = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getNestedValue(obj: ContentMap, dotKey: string): string {
-  return dotKey.split('.').reduce((acc, k) => acc?.[k], obj) ?? '';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = dotKey.split('.').reduce((acc: any, k: string) => acc?.[k], obj);
+  return (result as string) ?? '';
 }
 
 function setNestedValue(obj: ContentMap, dotKey: string, value: string): ContentMap {
