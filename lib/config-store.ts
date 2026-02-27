@@ -1,0 +1,82 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection } from './admin-types';
+
+const CONFIG_DIR = path.join(process.cwd(), 'data', 'config');
+
+async function readJson<T>(filename: string): Promise<T> {
+  const filePath = path.join(CONFIG_DIR, filename);
+  const raw = await fs.readFile(filePath, 'utf-8');
+  return JSON.parse(raw) as T;
+}
+
+async function writeJson<T>(filename: string, data: T): Promise<void> {
+  const filePath = path.join(CONFIG_DIR, filename);
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+export async function getTheme(): Promise<ThemeSettings> {
+  return readJson<ThemeSettings>('theme.json');
+}
+
+export async function saveTheme(theme: ThemeSettings): Promise<void> {
+  return writeJson('theme.json', theme);
+}
+
+export async function getNews(): Promise<NewsArticle[]> {
+  return readJson<NewsArticle[]>('news.json');
+}
+
+export async function saveNews(news: NewsArticle[]): Promise<void> {
+  return writeJson('news.json', news);
+}
+
+export async function getSections(): Promise<CustomSection[]> {
+  return readJson<CustomSection[]>('sections.json');
+}
+
+export async function saveSections(sections: CustomSection[]): Promise<void> {
+  return writeJson('sections.json', sections);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getContent(locale: string): Promise<Record<string, any>> {
+  return readJson(`content-${locale}.json`);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function saveContent(locale: string, content: Record<string, any>): Promise<void> {
+  return writeJson(`content-${locale}.json`, content);
+}
+
+export async function getProducts(): Promise<StoneProduct[]> {
+  return readJson<StoneProduct[]>('products.json');
+}
+
+export async function saveProducts(products: StoneProduct[]): Promise<void> {
+  return writeJson('products.json', products);
+}
+
+const DEFAULT_HOME_LAYOUT: HomeSection[] = [
+  { id: 'hero', type: 'hero', visible: true, order: 0 },
+  { id: 'product_categories', type: 'product_categories', visible: true, order: 1 },
+  { id: 'why_choose_us', type: 'why_choose_us', visible: true, order: 2 },
+  { id: 'sourcing_story', type: 'sourcing_story', visible: true, order: 3 },
+  { id: 'statistics', type: 'statistics', visible: true, order: 4 },
+  { id: 'custom_sections', type: 'custom_sections', visible: true, order: 5 },
+  { id: 'news', type: 'news', visible: true, order: 6 },
+  { id: 'cta_banner', type: 'cta_banner', visible: true, order: 7 },
+];
+
+export async function getHomeLayout(): Promise<HomeSection[]> {
+  try {
+    const data = await readJson<HomeSection[]>('home-layout.json');
+    return Array.isArray(data) && data.length > 0 ? data : DEFAULT_HOME_LAYOUT;
+  } catch {
+    return DEFAULT_HOME_LAYOUT;
+  }
+}
+
+export async function saveHomeLayout(layout: HomeSection[]): Promise<void> {
+  return writeJson('home-layout.json', layout);
+}

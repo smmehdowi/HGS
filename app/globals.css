@@ -1,0 +1,200 @@
+/* ─── Google Fonts (must precede all other rules) ───────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&family=Noto+Kufi+Arabic:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&family=Tajawal:wght@300;400;500;700;800&family=Cairo:wght@300;400;500;600;700;800&family=Almarai:wght@300;400;700;800&display=swap');
+
+@import "tailwindcss";
+
+/* ─── Brand Colors (in @theme so Tailwind can generate utility classes) ─ */
+@theme {
+  --color-obsidian:         #1a1a1a;
+  --color-marble-white:     #f5f0eb;
+  --color-gold:             #c9a96e;
+  --color-gold-light:       #e4c99a;
+  --color-warm-gray:        #8a8279;
+  --color-slate-dark:       #3a3a3c;
+  --color-sand:             #e8ddd0;
+  --color-deep-green:       #0d5e37;
+  --color-deep-green-hover: #0a4d2e;
+  --color-slate-blue:       #4a5568;
+  /*
+   * Font vars are intentionally NOT in @theme.
+   * They are defined ONLY by the runtime <style> injection in layout.tsx
+   * (reading from data/config/theme.json). Keeping them out of @theme
+   * prevents the Tailwind CSS layer from overriding the runtime values.
+   */
+}
+
+/* ─── Root Variables ────────────────────────────────────────────────── */
+/*
+ * --font-en-* and --font-ar-* are set at runtime by layout.tsx.
+ * We reference them here with var(name, hardcoded-fallback) so the
+ * site renders correctly even before the runtime style tag loads.
+ */
+:root {
+  --font-heading: var(--font-en-heading, 'Playfair Display', Georgia, serif);
+  --font-body:    var(--font-en-body, 'DM Sans', system-ui, sans-serif);
+}
+
+[lang="ar"] {
+  --font-heading: var(--font-ar-heading, 'Cairo', 'Noto Kufi Arabic', sans-serif);
+  --font-body:    var(--font-ar-body, 'Tajawal', 'IBM Plex Sans Arabic', sans-serif);
+  /*
+   * No root font-size scaling — Cairo and Tajawal are readable at 16px default.
+   * Use the dashboard "Body Text — Arabic" size control for body text adjustments.
+   */
+}
+
+/*
+ * Arabic script MUST NOT have letter-spacing — it disconnects character
+ * joins and produces unreadable text. Override all Tailwind tracking-* classes.
+ */
+[lang="ar"] * {
+  letter-spacing: 0 !important;
+}
+
+/*
+ * Explicitly apply the Arabic body font to interactive/inline elements.
+ * Some browsers and Tailwind resets can block font-family inheritance on
+ * buttons, inputs, and links — this ensures they always use the right font.
+ */
+[lang="ar"] body,
+[lang="ar"] a,
+[lang="ar"] button,
+[lang="ar"] input,
+[lang="ar"] textarea,
+[lang="ar"] select {
+  font-family: var(--font-ar-body, 'Cairo', sans-serif);
+}
+
+/* ─── Base Styles ───────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-marble-white);
+  color: var(--color-obsidian);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+[lang="ar"] body {
+  line-height: 1.85;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  line-height: 1.2;
+}
+
+[lang="ar"] h1,
+[lang="ar"] h2,
+[lang="ar"] h3,
+[lang="ar"] h4 {
+  line-height: 1.4;
+}
+
+/* ─── Custom Utilities ──────────────────────────────────────────────── */
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background-color: var(--color-deep-green);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-body);
+}
+
+@utility btn-primary {
+  &:hover {
+    background-color: var(--color-deep-green-hover);
+    transform: translateY(-1px);
+  }
+}
+
+@utility btn-gold {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background-color: var(--color-gold);
+  color: var(--color-obsidian);
+  font-weight: 600;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  font-family: var(--font-body);
+}
+
+@utility btn-gold {
+  &:hover {
+    background-color: var(--color-gold-light);
+    transform: translateY(-1px);
+  }
+}
+
+@utility btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  background-color: transparent;
+  color: white;
+  font-weight: 600;
+  border-radius: 0.25rem;
+  border: 2px solid white;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+@utility btn-outline {
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@utility section-heading {
+  font-family: var(--font-heading);
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 700;
+  color: var(--color-obsidian);
+  line-height: 1.2;
+}
+
+@utility container-site {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-sand); }
+::-webkit-scrollbar-thumb { background: var(--color-gold); border-radius: 3px; }
+
+/* ─── Selection ─────────────────────────────────────────────────────── */
+::selection {
+  background-color: var(--color-gold);
+  color: var(--color-obsidian);
+}
+
+/* ─── Focus ─────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
