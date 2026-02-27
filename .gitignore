@@ -37,6 +37,9 @@ yarn-error.log*
 /data/config/*.json
 /public/uploads/
 
+# Lock file — let server regenerate to avoid cross-platform sync issues
+package-lock.json
+
 # vercel
 .vercel
 
