@@ -33,8 +33,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
-# Runtime data — never overwrite with git pull
-/data/config/*.json
+# Runtime uploads — not tracked
 /public/uploads/
 
 # Lock file — let server regenerate to avoid cross-platform sync issues

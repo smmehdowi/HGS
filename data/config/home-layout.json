@@ -1,0 +1,56 @@
+[
+  {
+    "id": "hero",
+    "type": "hero",
+    "visible": true,
+    "order": 0
+  },
+  {
+    "id": "discounted_products_1772226579627",
+    "type": "discounted_products",
+    "visible": false,
+    "order": 1
+  },
+  {
+    "id": "product_categories",
+    "type": "product_categories",
+    "visible": true,
+    "order": 2
+  },
+  {
+    "id": "why_choose_us",
+    "type": "why_choose_us",
+    "visible": true,
+    "order": 3
+  },
+  {
+    "id": "sourcing_story",
+    "type": "sourcing_story",
+    "visible": true,
+    "order": 4
+  },
+  {
+    "id": "statistics",
+    "type": "statistics",
+    "visible": true,
+    "order": 5
+  },
+  {
+    "id": "custom_sections",
+    "type": "custom_sections",
+    "visible": true,
+    "order": 6
+  },
+  {
+    "id": "news",
+    "type": "news",
+    "visible": true,
+    "order": 7
+  },
+  {
+    "id": "cta_banner",
+    "type": "cta_banner",
+    "visible": false,
+    "order": 8
+  }
+]

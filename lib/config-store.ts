@@ -4,10 +4,15 @@ import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection } 
 
 const CONFIG_DIR = path.join(process.cwd(), 'data', 'config');
 
-async function readJson<T>(filename: string): Promise<T> {
+async function readJson<T>(filename: string, fallback?: T): Promise<T> {
   const filePath = path.join(CONFIG_DIR, filename);
-  const raw = await fs.readFile(filePath, 'utf-8');
-  return JSON.parse(raw) as T;
+  try {
+    const raw = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(raw) as T;
+  } catch {
+    if (fallback !== undefined) return fallback;
+    throw new Error(`Config file not found: ${filename}`);
+  }
 }
 
 async function writeJson<T>(filename: string, data: T): Promise<void> {
@@ -15,8 +20,26 @@ async function writeJson<T>(filename: string, data: T): Promise<void> {
   await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
+const DEFAULT_THEME: ThemeSettings = {
+  colors: {
+    obsidian: '#1a1a1a',
+    marbleWhite: '#f5f0eb',
+    gold: '#c9a96e',
+    goldLight: '#e4c99a',
+    warmGray: '#8a8279',
+    slateDark: '#3a3a3c',
+    sand: '#e8ddd0',
+    deepGreen: '#0d5e37',
+    deepGreenHover: '#0a4d2e',
+    slateBlue: '#4a5568',
+  },
+  fonts: { enHeading: 'Playfair Display', enBody: 'DM Sans', arHeading: 'Noto Kufi Arabic', arBody: 'IBM Plex Sans Arabic' },
+  fontSizes: { heroEn: '4.5rem', heroAr: '4rem', h2En: '2rem', h2Ar: '1.85rem', bodyEn: '1rem', bodyAr: '1.1rem' },
+  social: { tiktok: '', x: '', instagram: '', snapchat: '' },
+};
+
 export async function getTheme(): Promise<ThemeSettings> {
-  return readJson<ThemeSettings>('theme.json');
+  return readJson<ThemeSettings>('theme.json', DEFAULT_THEME);
 }
 
 export async function saveTheme(theme: ThemeSettings): Promise<void> {
@@ -24,7 +47,7 @@ export async function saveTheme(theme: ThemeSettings): Promise<void> {
 }
 
 export async function getNews(): Promise<NewsArticle[]> {
-  return readJson<NewsArticle[]>('news.json');
+  return readJson<NewsArticle[]>('news.json', []);
 }
 
 export async function saveNews(news: NewsArticle[]): Promise<void> {
@@ -32,7 +55,7 @@ export async function saveNews(news: NewsArticle[]): Promise<void> {
 }
 
 export async function getSections(): Promise<CustomSection[]> {
-  return readJson<CustomSection[]>('sections.json');
+  return readJson<CustomSection[]>('sections.json', []);
 }
 
 export async function saveSections(sections: CustomSection[]): Promise<void> {
@@ -41,7 +64,7 @@ export async function saveSections(sections: CustomSection[]): Promise<void> {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function getContent(locale: string): Promise<Record<string, any>> {
-  return readJson(`content-${locale}.json`);
+  return readJson(`content-${locale}.json`, {});
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,7 +73,7 @@ export async function saveContent(locale: string, content: Record<string, any>):
 }
 
 export async function getProducts(): Promise<StoneProduct[]> {
-  return readJson<StoneProduct[]>('products.json');
+  return readJson<StoneProduct[]>('products.json', []);
 }
 
 export async function saveProducts(products: StoneProduct[]): Promise<void> {
