@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { sendEmail, buildQuoteEmail, sendCustomerQuoteEmail } from '@/lib/send-email';
-import { sendWhatsAppText } from '@/lib/send-whatsapp';
 import { QuotePDF } from '@/lib/quote-pdf';
 
 export const runtime = 'nodejs';
@@ -73,14 +72,6 @@ export async function POST(request: NextRequest) {
   if (data.email && pdfBuffer) {
     const customerResult = await sendCustomerQuoteEmail(data.email, data.name ?? 'Customer', quoteRef, pdfBuffer);
     if (!customerResult.ok) console.error('[quote] Customer email failed:', customerResult.error);
-  }
-
-  // 3. WhatsApp notification — if customer chose WhatsApp as contact method
-  if (data.contactMethod === 'whatsapp' && data.phone) {
-    const emailNote = data.email ? ` Your PDF quote has been sent to ${data.email}.` : '';
-    const msg = `Dear ${data.name ?? 'Customer'},\n\nThank you for your quote request from Himalayan Gulf Stones.\n\nQuote Reference: ${quoteRef}\n\nOur team will review your requirements and contact you within 24 hours.${emailNote}\n\nHimalayan Gulf Stones\nhimalayangulfstones.com`;
-    const waResult = await sendWhatsAppText(data.phone, msg);
-    if (!waResult.ok) console.error('[quote] WhatsApp failed:', waResult.error);
   }
 
   return NextResponse.json({

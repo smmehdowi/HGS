@@ -5,13 +5,6 @@ export interface EmailSettings {
   enabled: boolean;
 }
 
-export interface WhatsAppSettings {
-  enabled: boolean;
-  phoneNumberId: string;
-  apiToken: string;
-  testPhone: string;
-}
-
 export interface SocialLinks {
   tiktok: string;
   x: string;

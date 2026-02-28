@@ -92,7 +92,7 @@ function QuoteForm() {
   const [company, setCompany]             = useState('');
   const [phone, setPhone]                 = useState('');
   const [email, setEmail]                 = useState('');
-  const [contactMethod, setContactMethod] = useState('whatsapp');
+  const [contactMethod, setContactMethod] = useState('email');
 
   // Build the products list for the email/PDF
   const products = cartItems.length > 0

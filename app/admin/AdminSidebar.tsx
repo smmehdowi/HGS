@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Palette, Newspaper, LayoutGrid, LogOut, FileText, Package, Home, Mail, MessageSquare } from 'lucide-react';
+import { Palette, Newspaper, LayoutGrid, LogOut, FileText, Package, Home, Mail } from 'lucide-react';
 
 const navItems = [
   { href: '/admin/home', label: 'Home Layout', icon: Home },
@@ -12,7 +12,6 @@ const navItems = [
   { href: '/admin/news', label: 'News', icon: Newspaper },
   { href: '/admin/sections', label: 'Sections', icon: LayoutGrid },
   { href: '/admin/email', label: 'Email Settings', icon: Mail },
-  { href: '/admin/whatsapp', label: 'WhatsApp', icon: MessageSquare },
 ];
 
 export default function AdminSidebar() {
