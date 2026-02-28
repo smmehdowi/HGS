@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection, EmailSettings } from './admin-types';
+import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection, EmailSettings, DaftraSettings } from './admin-types';
 
 const CONFIG_DIR = path.join(process.cwd(), 'data', 'config');
 
@@ -117,5 +117,29 @@ export async function getEmailSettings(): Promise<EmailSettings> {
 
 export async function saveEmailSettings(settings: EmailSettings): Promise<void> {
   return writeJson('email.json', settings);
+}
+
+const DEFAULT_DAFTRA: DaftraSettings = {
+  enabled: false,
+  subdomain: '',
+  apiKey: '',
+  storeId: 1,
+  currencyCode: 'SAR',
+};
+
+export async function getDaftraSettings(): Promise<DaftraSettings> {
+  return readJson<DaftraSettings>('daftra.json', DEFAULT_DAFTRA);
+}
+
+export async function saveDaftraSettings(settings: DaftraSettings): Promise<void> {
+  return writeJson('daftra.json', settings);
+}
+
+export async function getDaftraProductMap(): Promise<Record<string, number>> {
+  return readJson<Record<string, number>>('daftra-product-map.json', {});
+}
+
+export async function saveDaftraProductMap(map: Record<string, number>): Promise<void> {
+  return writeJson('daftra-product-map.json', map);
 }
 

@@ -1,3 +1,11 @@
+export interface DaftraSettings {
+  enabled: boolean;
+  subdomain: string;    // e.g. "mycompany" → mycompany.daftra.com
+  apiKey: string;
+  storeId: number;      // from Daftra → Settings → Stores
+  currencyCode: string; // default "SAR"
+}
+
 export interface EmailSettings {
   toEmail: string;
   ccEmail: string;
