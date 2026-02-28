@@ -71,10 +71,10 @@ function QuoteForm() {
   const paramType    = searchParams.get('type') ?? '';
   const paramVariety = searchParams.get('variety') ?? '';
 
-  // Start at step 2 if: cart has items OR URL has a pre-selected product
+  // Start at step 1 (cart manager) if cart has items; step 2 if URL has product params; else step 1 (stone picker)
   // For cart flow, step 2 (global specs) is skipped — we go 1 → 3 → 4
   const hasPreSelection = cartItems.length > 0 || Boolean(paramType);
-  const [step, setStep]           = useState<Step>(hasPreSelection ? (cartItems.length > 0 ? 3 : 2) : 1);
+  const [step, setStep]           = useState<Step>(hasPreSelection ? (cartItems.length > 0 ? 1 : 2) : 1);
   const [submitted, setSubmitted] = useState(false);
   const [quoteResult, setQuoteResult] = useState<{ quoteRef: string; pdfBase64: string | null } | null>(null);
 
@@ -99,6 +99,7 @@ function QuoteForm() {
     ? cartItems.map(i => ({
         type: i.type,
         nameEn: i.nameEn,
+        nameAr: i.nameAr,
         quantity: i.specs?.quantity,
         dimensions: i.specs?.dimensions,
         thickness: i.specs?.thickness,
@@ -106,7 +107,7 @@ function QuoteForm() {
         pricePerM2: i.pricePerM2,
       }))
     : stoneType
-      ? [{ type: stoneType, nameEn: variety || stoneType }]
+      ? [{ type: stoneType, nameEn: variety || stoneType, nameAr: variety || stoneType }]
       : [];
 
   function downloadPdf(base64: string, ref: string) {
@@ -126,6 +127,7 @@ function QuoteForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        locale,
         products, quantity, dimensions, thickness,
         finish, projectType, city, timeline,
         name, company, phone, email, contactMethod,

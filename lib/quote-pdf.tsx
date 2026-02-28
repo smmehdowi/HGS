@@ -1,5 +1,14 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+
+// Register Cairo font (includes Arabic + Latin glyphs) for bilingual PDF support
+Font.register({
+  family: 'Cairo',
+  fonts: [
+    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo@5.1.1/files/cairo-arabic-400-normal.woff2', fontWeight: 400 },
+    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo@5.1.1/files/cairo-arabic-700-normal.woff2', fontWeight: 700 },
+  ],
+});
 
 const GREEN = '#0d5e37';
 const SAND = '#e8ddd0';
@@ -78,12 +87,67 @@ const styles = StyleSheet.create({
   noPriceText: { color: '#7a5000', fontSize: 8, lineHeight: 1.5 },
 });
 
+// Labels for each locale
+const LABELS = {
+  en: {
+    title: 'Quote Summary',
+    customer: 'Customer Information',
+    name: 'Name',
+    company: 'Company',
+    phone: 'Phone',
+    email: 'Email',
+    project: 'Project Details',
+    projectType: 'Project Type',
+    city: 'City',
+    timeline: 'Timeline',
+    products: 'Products Requested',
+    product: 'Product',
+    specs: 'Specifications',
+    qty: 'Qty m\u00B2',
+    price: 'Price/m\u00B2',
+    total: 'Total',
+    pricing: 'Pricing Summary',
+    subtotal: 'Subtotal (excl. VAT)',
+    vat: 'VAT',
+    grandTotal: 'Total (incl. VAT)',
+    noPriceNote: 'Pricing: Our team will review your specifications and send a detailed price confirmation within 24 hours.',
+    footer: 'This quote is valid for 30 days from the date of issue. Prices are indicative and subject to final confirmation upon review.\nHimalayan Gulf Stones \u00B7 himalayangulfstones.com \u00B7 All prices in Saudi Riyals (SAR) \u00B7 VAT 15% included',
+    tbd: 'TBD',
+  },
+  ar: {
+    title: '\u0645\u0644\u062E\u0635 \u0627\u0644\u0639\u0631\u0636',
+    customer: '\u0645\u0639\u0644\u0648\u0645\u0627\u062A \u0627\u0644\u0639\u0645\u064A\u0644',
+    name: '\u0627\u0644\u0627\u0633\u0645',
+    company: '\u0627\u0644\u0634\u0631\u0643\u0629',
+    phone: '\u0627\u0644\u0647\u0627\u062A\u0641',
+    email: '\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A',
+    project: '\u062A\u0641\u0627\u0635\u064A\u0644 \u0627\u0644\u0645\u0634\u0631\u0648\u0639',
+    projectType: '\u0646\u0648\u0639 \u0627\u0644\u0645\u0634\u0631\u0648\u0639',
+    city: '\u0627\u0644\u0645\u062F\u064A\u0646\u0629',
+    timeline: '\u0627\u0644\u062C\u062F\u0648\u0644 \u0627\u0644\u0632\u0645\u0646\u064A',
+    products: '\u0627\u0644\u0645\u0646\u062A\u062C\u0627\u062A \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629',
+    product: '\u0627\u0644\u0645\u0646\u062A\u062C',
+    specs: '\u0627\u0644\u0645\u0648\u0627\u0635\u0641\u0627\u062A',
+    qty: '\u0627\u0644\u0643\u0645\u064A\u0629 \u0645\u00B2',
+    price: '\u0627\u0644\u0633\u0639\u0631/\u0645\u00B2',
+    total: '\u0627\u0644\u0645\u062C\u0645\u0648\u0639',
+    pricing: '\u0645\u0644\u062E\u0635 \u0627\u0644\u062A\u0633\u0639\u064A\u0631',
+    subtotal: '\u0627\u0644\u0645\u062C\u0645\u0648\u0639 \u0627\u0644\u0641\u0631\u0639\u064A (\u0628\u062F\u0648\u0646 \u0636\u0631\u064A\u0628\u0629)',
+    vat: '\u0636\u0631\u064A\u0628\u0629 \u0627\u0644\u0642\u064A\u0645\u0629 \u0627\u0644\u0645\u0636\u0627\u0641\u0629',
+    grandTotal: '\u0627\u0644\u0625\u062C\u0645\u0627\u0644\u064A (\u0634\u0627\u0645\u0644 \u0627\u0644\u0636\u0631\u064A\u0628\u0629)',
+    noPriceNote: '\u0627\u0644\u062A\u0633\u0639\u064A\u0631: \u0633\u064A\u0631\u0627\u062C\u0639 \u0641\u0631\u064A\u0642\u0646\u0627 \u0645\u0648\u0627\u0635\u0641\u0627\u062A\u0643 \u0648\u064A\u0631\u0633\u0644 \u062A\u0623\u0643\u064A\u062F\u0627\u064B \u062A\u0641\u0635\u064A\u0644\u064A\u0627\u064B \u0644\u0644\u0623\u0633\u0639\u0627\u0631 \u062E\u0644\u0627\u0644 24 \u0633\u0627\u0639\u0629.',
+    footer: '\u0647\u0630\u0627 \u0627\u0644\u0639\u0631\u0636 \u0635\u0627\u0644\u062D \u0644\u0645\u062F\u0629 30 \u064A\u0648\u0645\u0627\u064B \u0645\u0646 \u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0635\u062F\u0627\u0631. \u0627\u0644\u0623\u0633\u0639\u0627\u0631 \u0627\u0633\u062A\u0631\u0634\u0627\u062F\u064A\u0629 \u0648\u062A\u062E\u0636\u0639 \u0644\u0644\u062A\u0623\u0643\u064A\u062F \u0627\u0644\u0646\u0647\u0627\u0626\u064A.\nHimalayan Gulf Stones \u00B7 himalayangulfstones.com \u00B7 \u062C\u0645\u064A\u0639 \u0627\u0644\u0623\u0633\u0639\u0627\u0631 \u0628\u0627\u0644\u0631\u064A\u0627\u0644 \u0627\u0644\u0633\u0639\u0648\u062F\u064A (SAR) \u00B7 \u0636\u0631\u064A\u0628\u0629 \u0627\u0644\u0642\u064A\u0645\u0629 \u0627\u0644\u0645\u0636\u0627\u0641\u0629 15%',
+    tbd: '\u064A\u062D\u062F\u062F \u0644\u0627\u062D\u0642\u0627\u064B',
+  },
+} as const;
+
 function fmt(n: number): string {
   return `SAR ${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 export interface QuotePDFProduct {
   nameEn: string;
+  nameAr?: string;
   type: string;
   quantity?: string;
   dimensions?: string;
@@ -93,6 +157,7 @@ export interface QuotePDFProduct {
 }
 
 export interface QuotePDFProps {
+  locale?: string;
   quoteRef: string;
   date: string;
   customer: { name: string; company: string; phone: string; email: string };
@@ -101,11 +166,19 @@ export interface QuotePDFProps {
   vatPercent: number;
 }
 
-export function QuotePDF({ quoteRef, date, customer, project, products, vatPercent }: QuotePDFProps) {
+export function QuotePDF({ locale, quoteRef, date, customer, project, products, vatPercent }: QuotePDFProps) {
+  const isAr = locale === 'ar';
+  const L = isAr ? LABELS.ar : LABELS.en;
+
+  // Font helpers — Cairo covers both Arabic and Latin characters
+  const af = isAr ? { fontFamily: 'Cairo', fontWeight: 400 } : {};
+  const afBold = isAr ? { fontFamily: 'Cairo', fontWeight: 700 } : {};
+
   const lineItems = products.map(p => {
     const qty = parseFloat(p.quantity || '0') || 0;
     const price = p.pricePerM2 || 0;
-    return { ...p, qty, price, total: qty * price };
+    const displayName = isAr && p.nameAr ? p.nameAr : p.nameEn;
+    return { ...p, qty, price, total: qty * price, displayName };
   });
 
   const subtotal = lineItems.reduce((s, li) => s + li.total, 0);
@@ -117,7 +190,7 @@ export function QuotePDF({ quoteRef, date, customer, project, products, vatPerce
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header */}
+        {/* Header — always in English (brand name) */}
         <View style={styles.header}>
           <Text style={styles.headerCompany}>Himalayan Gulf Stones</Text>
           <Text style={styles.headerSub}>himalayangulfstones.com</Text>
@@ -126,7 +199,7 @@ export function QuotePDF({ quoteRef, date, customer, project, products, vatPerce
         <View style={styles.body}>
           {/* Title + Reference */}
           <View style={styles.titleRow}>
-            <Text style={styles.titleText}>Quote Summary</Text>
+            <Text style={[styles.titleText, afBold]}>{L.title}</Text>
             <View style={{ alignItems: 'flex-end' }}>
               <View style={styles.refBox}>
                 <Text style={styles.refText}>{quoteRef}</Text>
@@ -137,34 +210,34 @@ export function QuotePDF({ quoteRef, date, customer, project, products, vatPerce
 
           {/* Customer Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Customer Information</Text>
-            {customer.name    ? <View style={styles.infoRow}><Text style={styles.infoLabel}>Name</Text><Text style={styles.infoValue}>{customer.name}</Text></View> : null}
-            {customer.company ? <View style={styles.infoRow}><Text style={styles.infoLabel}>Company</Text><Text style={styles.infoValue}>{customer.company}</Text></View> : null}
-            {customer.phone   ? <View style={styles.infoRow}><Text style={styles.infoLabel}>Phone</Text><Text style={styles.infoValue}>{customer.phone}</Text></View> : null}
-            {customer.email   ? <View style={styles.infoRow}><Text style={styles.infoLabel}>Email</Text><Text style={styles.infoValue}>{customer.email}</Text></View> : null}
+            <Text style={[styles.sectionTitle, afBold]}>{L.customer}</Text>
+            {customer.name    ? <View style={styles.infoRow}><Text style={[styles.infoLabel, af]}>{L.name}</Text><Text style={[styles.infoValue, af]}>{customer.name}</Text></View> : null}
+            {customer.company ? <View style={styles.infoRow}><Text style={[styles.infoLabel, af]}>{L.company}</Text><Text style={[styles.infoValue, af]}>{customer.company}</Text></View> : null}
+            {customer.phone   ? <View style={styles.infoRow}><Text style={[styles.infoLabel, af]}>{L.phone}</Text><Text style={[styles.infoValue, af]}>{customer.phone}</Text></View> : null}
+            {customer.email   ? <View style={styles.infoRow}><Text style={[styles.infoLabel, af]}>{L.email}</Text><Text style={[styles.infoValue, af]}>{customer.email}</Text></View> : null}
           </View>
 
           {/* Project Details */}
           {(project.type || project.city || project.timeline) ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Project Details</Text>
-              {project.type     ? <View style={styles.infoRow}><Text style={styles.infoLabel}>Project Type</Text><Text style={styles.infoValue}>{project.type}</Text></View> : null}
-              {project.city     ? <View style={styles.infoRow}><Text style={styles.infoLabel}>City</Text><Text style={styles.infoValue}>{project.city}</Text></View> : null}
-              {project.timeline ? <View style={styles.infoRow}><Text style={styles.infoLabel}>Timeline</Text><Text style={styles.infoValue}>{project.timeline}</Text></View> : null}
+              <Text style={[styles.sectionTitle, afBold]}>{L.project}</Text>
+              {project.type     ? <View style={styles.infoRow}><Text style={[styles.infoLabel, af]}>{L.projectType}</Text><Text style={[styles.infoValue, af]}>{project.type}</Text></View> : null}
+              {project.city     ? <View style={styles.infoRow}><Text style={[styles.infoLabel, af]}>{L.city}</Text><Text style={[styles.infoValue, af]}>{project.city}</Text></View> : null}
+              {project.timeline ? <View style={styles.infoRow}><Text style={[styles.infoLabel, af]}>{L.timeline}</Text><Text style={[styles.infoValue, af]}>{project.timeline}</Text></View> : null}
             </View>
           ) : null}
 
           {/* Products Table */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Products Requested</Text>
+            <Text style={[styles.sectionTitle, afBold]}>{L.products}</Text>
             {/* Header row */}
             <View style={styles.tableHeader}>
-              <Text style={[styles.thText, styles.colNum]}>#</Text>
-              <Text style={[styles.thText, styles.colName]}>Product</Text>
-              <Text style={[styles.thText, styles.colSpecs]}>Specifications</Text>
-              <Text style={[styles.thText, styles.colQty]}>Qty m²</Text>
-              {hasPrice ? <Text style={[styles.thText, styles.colPrice]}>Price/m²</Text> : null}
-              {hasPrice ? <Text style={[styles.thText, styles.colTotal]}>Total</Text> : null}
+              <Text style={[styles.thText, styles.colNum, af]}>#</Text>
+              <Text style={[styles.thText, styles.colName, af]}>{L.product}</Text>
+              <Text style={[styles.thText, styles.colSpecs, af]}>{L.specs}</Text>
+              <Text style={[styles.thText, styles.colQty, af]}>{L.qty}</Text>
+              {hasPrice ? <Text style={[styles.thText, styles.colPrice, af]}>{L.price}</Text> : null}
+              {hasPrice ? <Text style={[styles.thText, styles.colTotal, af]}>{L.total}</Text> : null}
             </View>
             {/* Data rows */}
             {lineItems.map((item, i) => {
@@ -173,13 +246,13 @@ export function QuotePDF({ quoteRef, date, customer, project, products, vatPerce
                 <View key={i} style={[styles.tableRow, i % 2 === 1 ? { backgroundColor: ROW_ALT } : {}]}>
                   <Text style={[styles.tdText, styles.colNum]}>{i + 1}</Text>
                   <View style={styles.colName}>
-                    <Text style={[styles.tdText, { fontFamily: 'Helvetica-Bold' }]}>{item.nameEn}</Text>
-                    <Text style={styles.tdSub}>{item.type}</Text>
+                    <Text style={[styles.tdText, { fontFamily: isAr ? 'Cairo' : 'Helvetica-Bold', fontWeight: isAr ? 700 : undefined }]}>{item.displayName}</Text>
+                    <Text style={[styles.tdSub, af]}>{item.type}</Text>
                   </View>
-                  <Text style={[styles.tdText, styles.colSpecs, { color: '#555' }]}>{specs || '—'}</Text>
-                  <Text style={[styles.tdText, styles.colQty]}>{item.qty > 0 ? String(item.qty) : '—'}</Text>
-                  {hasPrice ? <Text style={[styles.tdText, styles.colPrice]}>{item.price > 0 ? fmt(item.price) : 'TBD'}</Text> : null}
-                  {hasPrice ? <Text style={[styles.tdText, styles.colTotal]}>{item.total > 0 ? fmt(item.total) : 'TBD'}</Text> : null}
+                  <Text style={[styles.tdText, styles.colSpecs, { color: '#555' }, af]}>{specs || '—'}</Text>
+                  <Text style={[styles.tdText, styles.colQty, af]}>{item.qty > 0 ? String(item.qty) : '—'}</Text>
+                  {hasPrice ? <Text style={[styles.tdText, styles.colPrice, af]}>{item.price > 0 ? fmt(item.price) : L.tbd}</Text> : null}
+                  {hasPrice ? <Text style={[styles.tdText, styles.colTotal, af]}>{item.total > 0 ? fmt(item.total) : L.tbd}</Text> : null}
                 </View>
               );
             })}
@@ -188,27 +261,27 @@ export function QuotePDF({ quoteRef, date, customer, project, products, vatPerce
           {/* Pricing Summary */}
           {hasTotals ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Pricing Summary</Text>
+              <Text style={[styles.sectionTitle, afBold]}>{L.pricing}</Text>
               <View style={styles.totalsContainer}>
                 <View style={styles.totalsRow}>
-                  <Text style={styles.totalsLabel}>Subtotal (excl. VAT)</Text>
-                  <Text style={styles.totalsValue}>{fmt(subtotal)}</Text>
+                  <Text style={[styles.totalsLabel, af]}>{L.subtotal}</Text>
+                  <Text style={[styles.totalsValue, af]}>{fmt(subtotal)}</Text>
                 </View>
                 <View style={styles.totalsRow}>
-                  <Text style={styles.totalsLabel}>VAT ({vatPercent}%)</Text>
-                  <Text style={styles.totalsValue}>{fmt(vat)}</Text>
+                  <Text style={[styles.totalsLabel, af]}>{L.vat} ({vatPercent}%)</Text>
+                  <Text style={[styles.totalsValue, af]}>{fmt(vat)}</Text>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.totalsRow}>
-                  <Text style={[styles.totalsLabel, styles.grandLabel]}>Total (incl. VAT)</Text>
-                  <Text style={[styles.totalsValue, styles.grandValue]}>{fmt(grandTotal)}</Text>
+                  <Text style={[styles.totalsLabel, styles.grandLabel, afBold]}>{L.grandTotal}</Text>
+                  <Text style={[styles.totalsValue, styles.grandValue, afBold]}>{fmt(grandTotal)}</Text>
                 </View>
               </View>
             </View>
           ) : hasPrice ? null : (
             <View style={styles.noPriceNote}>
-              <Text style={styles.noPriceText}>
-                Pricing: Our team will review your specifications and send a detailed price confirmation within 24 hours.
+              <Text style={[styles.noPriceText, af]}>
+                {L.noPriceNote}
               </Text>
             </View>
           )}
@@ -216,9 +289,8 @@ export function QuotePDF({ quoteRef, date, customer, project, products, vatPerce
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>
-            This quote is valid for 30 days from the date of issue. Prices are indicative and subject to final confirmation upon review.{'\n'}
-            Himalayan Gulf Stones · himalayangulfstones.com · All prices in Saudi Riyals (SAR) · VAT 15% included
+          <Text style={[styles.footerText, af]}>
+            {L.footer}
           </Text>
         </View>
       </Page>

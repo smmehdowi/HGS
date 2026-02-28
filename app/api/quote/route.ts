@@ -21,12 +21,14 @@ function formatDate(d: Date): string {
 export async function POST(request: NextRequest) {
   const data = await request.json();
   const quoteRef = generateQuoteRef();
+  const locale: string = data.locale ?? 'en';
 
   // Build product list for PDF
   const pdfProducts = (
-    data.products ?? (data.stoneType ? [{ type: data.stoneType, nameEn: data.variety || data.stoneType }] : [])
-  ).map((p: { type: string; nameEn: string; quantity?: string; dimensions?: string; thickness?: string; finish?: string; pricePerM2?: number }) => ({
+    data.products ?? (data.stoneType ? [{ type: data.stoneType, nameEn: data.variety || data.stoneType, nameAr: data.variety || data.stoneType }] : [])
+  ).map((p: { type: string; nameEn: string; nameAr?: string; quantity?: string; dimensions?: string; thickness?: string; finish?: string; pricePerM2?: number }) => ({
     nameEn: p.nameEn,
+    nameAr: p.nameAr,
     type: p.type,
     quantity: p.quantity,
     dimensions: p.dimensions,
@@ -41,6 +43,7 @@ export async function POST(request: NextRequest) {
     // QuotePDF returns <Document> at its root; cast needed because renderToBuffer
     // expects ReactElement<DocumentProps> but createElement returns FunctionComponentElement<QuotePDFProps>
     const pdfElement = React.createElement(QuotePDF, {
+      locale,
       quoteRef,
       date: formatDate(new Date()),
       customer: {
