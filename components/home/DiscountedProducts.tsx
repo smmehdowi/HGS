@@ -131,7 +131,7 @@ export default function DiscountedProducts({ products, locale }: Props) {
                   </div>
 
                   <Link
-                    href={`/${locale}/quote?stone=${encodeURIComponent(product.id)}`}
+                    href={`/${locale}/quote?type=${product.category}&variety=${encodeURIComponent(product.nameEn)}`}
                     className="btn-primary w-full justify-center text-sm py-2.5 mt-4"
                   >
                     {isAr ? 'طلب عرض سعر' : 'Request Quote'}

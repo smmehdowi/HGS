@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { CheckCircle } from 'lucide-react';
 
@@ -55,27 +56,32 @@ const stoneImages: Record<string, string> = {
   granite: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&q=80',
 };
 
-export default function QuotePage() {
+function QuoteForm() {
   const t = useTranslations('quote');
   const locale = useLocale();
   const isAr = locale === 'ar';
+  const searchParams = useSearchParams();
 
-  const [step, setStep] = useState<Step>(1);
+  // Pre-fill from product link (?type=slate&variety=Kota+Blue+Slate)
+  const paramType    = searchParams.get('type') ?? '';
+  const paramVariety = searchParams.get('variety') ?? '';
+
+  const [step, setStep]           = useState<Step>(paramType ? 2 : 1);
   const [submitted, setSubmitted] = useState(false);
 
-  const [stoneType, setStoneType]       = useState('');
-  const [variety, setVariety]           = useState('');
-  const [quantity, setQuantity]         = useState('');
-  const [dimensions, setDimensions]     = useState('');
-  const [thickness, setThickness]       = useState('');
-  const [finish, setFinish]             = useState('');
-  const [projectType, setProjectType]   = useState('');
-  const [city, setCity]                 = useState('');
-  const [timeline, setTimeline]         = useState('');
-  const [name, setName]                 = useState('');
-  const [company, setCompany]           = useState('');
-  const [phone, setPhone]               = useState('');
-  const [email, setEmail]               = useState('');
+  const [stoneType, setStoneType]         = useState(paramType);
+  const [variety, setVariety]             = useState(paramVariety);
+  const [quantity, setQuantity]           = useState('');
+  const [dimensions, setDimensions]       = useState('');
+  const [thickness, setThickness]         = useState('');
+  const [finish, setFinish]               = useState('');
+  const [projectType, setProjectType]     = useState('');
+  const [city, setCity]                   = useState('');
+  const [timeline, setTimeline]           = useState('');
+  const [name, setName]                   = useState('');
+  const [company, setCompany]             = useState('');
+  const [phone, setPhone]                 = useState('');
+  const [email, setEmail]                 = useState('');
   const [contactMethod, setContactMethod] = useState('whatsapp');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -135,6 +141,33 @@ export default function QuotePage() {
       {/* Form */}
       <section className="py-14 bg-[var(--color-marble-white)]" style={{ direction: isAr ? 'rtl' : 'ltr' }}>
         <div className="container-site max-w-3xl">
+
+          {/* Pre-selected product banner */}
+          {paramType && paramVariety && (
+            <div className="flex items-center gap-3 mb-8 bg-[var(--color-deep-green)]/10 border border-[var(--color-deep-green)]/30 rounded-lg px-5 py-3.5">
+              <img
+                src={stoneImages[paramType]}
+                alt={paramType}
+                className="w-12 h-12 rounded-lg object-cover shrink-0"
+              />
+              <div>
+                <p className="text-xs text-[var(--color-deep-green)] font-semibold uppercase tracking-wide">
+                  {isAr ? 'المنتج المختار' : 'Selected Product'}
+                </p>
+                <p className="font-semibold text-[var(--color-obsidian)] capitalize">
+                  {paramVariety} <span className="text-[var(--color-warm-gray)] font-normal">({paramType})</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="ms-auto text-xs text-[var(--color-warm-gray)] hover:text-[var(--color-obsidian)] underline underline-offset-2 shrink-0"
+              >
+                {isAr ? 'تغيير' : 'Change'}
+              </button>
+            </div>
+          )}
+
           {/* Step indicator */}
           <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-2">
             {steps.map(({ num, label }, i) => (
@@ -305,5 +338,13 @@ export default function QuotePage() {
         </div>
       </section>
     </>
+  );
+}
+
+export default function QuotePage() {
+  return (
+    <Suspense fallback={null}>
+      <QuoteForm />
+    </Suspense>
   );
 }
