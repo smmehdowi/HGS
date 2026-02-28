@@ -1,6 +1,17 @@
-import { getWhatsAppSettings } from './config-store';
+// WhatsApp integration — INACTIVE pending WhatsApp Business API subscription.
+// To activate: remove the early return below and uncomment the import.
+// Then configure Phone Number ID + API Token in Admin → WhatsApp settings.
 
-export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: boolean; error?: string }> {
+// import { getWhatsAppSettings } from './config-store';
+
+export async function sendWhatsAppText(
+  _to: string,
+  _body: string,
+): Promise<{ ok: boolean; error?: string }> {
+  // TEMPORARILY INACTIVE — return immediately so deployments are unaffected.
+  return { ok: true };
+
+  /* ── Activate when WhatsApp Business API is ready ──────────────────────────
   const settings = await getWhatsAppSettings();
 
   if (!settings.enabled) return { ok: true }; // silently skip if disabled
@@ -38,4 +49,5 @@ export async function sendWhatsAppText(to: string, body: string): Promise<{ ok: 
   } catch (e) {
     return { ok: false, error: String(e) };
   }
+  ─────────────────────────────────────────────────────────────────────────── */
 }
