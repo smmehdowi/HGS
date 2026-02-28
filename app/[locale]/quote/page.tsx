@@ -3,7 +3,9 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
-import { CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle, X, ShoppingBag } from 'lucide-react';
+import { useQuoteCart } from '@/lib/quote-cart-context';
 
 // value = what gets submitted; labelKey = translation key for display
 const stoneTypes = [
@@ -61,14 +63,18 @@ function QuoteForm() {
   const locale = useLocale();
   const isAr = locale === 'ar';
   const searchParams = useSearchParams();
+  const { items: cartItems, remove: removeFromCart, clear: clearCart } = useQuoteCart();
 
-  // Pre-fill from product link (?type=slate&variety=Kota+Blue+Slate)
+  // Pre-fill from product link (?type=slate&variety=Kota+Blue+Slate) — legacy single-product flow
   const paramType    = searchParams.get('type') ?? '';
   const paramVariety = searchParams.get('variety') ?? '';
 
-  const [step, setStep]           = useState<Step>(paramType ? 2 : 1);
+  // Start at step 2 if: cart has items OR URL has a pre-selected product
+  const hasPreSelection = cartItems.length > 0 || Boolean(paramType);
+  const [step, setStep]           = useState<Step>(hasPreSelection ? 2 : 1);
   const [submitted, setSubmitted] = useState(false);
 
+  // Single-product fields (used only when cart is empty and URL params are present)
   const [stoneType, setStoneType]         = useState(paramType);
   const [variety, setVariety]             = useState(paramVariety);
   const [quantity, setQuantity]           = useState('');
@@ -84,17 +90,25 @@ function QuoteForm() {
   const [email, setEmail]                 = useState('');
   const [contactMethod, setContactMethod] = useState('whatsapp');
 
+  // Build the products list for the email: cart items take priority, else single-product from URL/step 1
+  const products = cartItems.length > 0
+    ? cartItems.map(i => ({ type: i.type, nameEn: i.nameEn }))
+    : stoneType
+      ? [{ type: stoneType, nameEn: variety || stoneType }]
+      : [];
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     await fetch('/api/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        stoneType, variety, quantity, dimensions, thickness,
+        products, quantity, dimensions, thickness,
         finish, projectType, city, timeline,
         name, company, phone, email, contactMethod,
       }),
     });
+    clearCart();
     setSubmitted(true);
   }
 
@@ -142,29 +156,29 @@ function QuoteForm() {
       <section className="py-14 bg-[var(--color-marble-white)]" style={{ direction: isAr ? 'rtl' : 'ltr' }}>
         <div className="container-site max-w-3xl">
 
-          {/* Pre-selected product banner */}
-          {paramType && paramVariety && (
-            <div className="flex items-center gap-3 mb-8 bg-[var(--color-deep-green)]/10 border border-[var(--color-deep-green)]/30 rounded-lg px-5 py-3.5">
-              <img
-                src={stoneImages[paramType]}
-                alt={paramType}
-                className="w-12 h-12 rounded-lg object-cover shrink-0"
-              />
-              <div>
-                <p className="text-xs text-[var(--color-deep-green)] font-semibold uppercase tracking-wide">
-                  {isAr ? 'المنتج المختار' : 'Selected Product'}
+          {/* Cart summary bar — shown on steps 2-4 when cart has items */}
+          {cartItems.length > 0 && step > 1 && (
+            <div className="mb-8 bg-[var(--color-deep-green)]/10 border border-[var(--color-deep-green)]/30 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-[var(--color-deep-green)] flex items-center gap-2">
+                  <ShoppingBag size={15} />
+                  {isAr ? `المنتجات المختارة (${cartItems.length})` : `Selected Products (${cartItems.length})`}
                 </p>
-                <p className="font-semibold text-[var(--color-obsidian)] capitalize">
-                  {paramVariety} <span className="text-[var(--color-warm-gray)] font-normal">({paramType})</span>
-                </p>
+                <button type="button" onClick={() => setStep(1)} className="text-xs text-[var(--color-warm-gray)] hover:text-[var(--color-obsidian)] underline underline-offset-2">
+                  {isAr ? 'تعديل' : 'Edit list'}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="ms-auto text-xs text-[var(--color-warm-gray)] hover:text-[var(--color-obsidian)] underline underline-offset-2 shrink-0"
-              >
-                {isAr ? 'تغيير' : 'Change'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {cartItems.map(item => (
+                  <div key={item.id} className="flex items-center gap-1.5 bg-white border border-[var(--color-sand)] rounded-lg px-2.5 py-1.5 text-sm">
+                    <img src={item.image || stoneImages[item.type]} alt={item.nameEn} className="w-6 h-6 rounded object-cover" />
+                    <span className="font-medium text-[var(--color-obsidian)]">{isAr ? item.nameAr : item.nameEn}</span>
+                    <button type="button" onClick={() => removeFromCart(item.id)} className="text-[var(--color-warm-gray)] hover:text-red-500 ms-1">
+                      <X size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -187,39 +201,80 @@ function QuoteForm() {
 
           <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-[var(--color-sand)] p-8">
 
-            {/* Step 1 — Stone Type */}
+            {/* Step 1 — Cart manager (when cart has items) OR stone type picker (when empty) */}
             {step === 1 && (
               <div>
-                <h2 className="text-xl font-bold text-[var(--color-obsidian)] mb-6" style={{ fontFamily: isAr ? 'var(--font-ar-heading)' : 'var(--font-en-heading)' }}>
-                  {t('step1_title')}
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
-                  {stoneTypes.map(({ value, labelKey }) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setStoneType(value)}
-                      className={`rounded-lg overflow-hidden border-2 transition-all ${stoneType === value ? 'border-[var(--color-deep-green)] shadow-md' : 'border-[var(--color-sand)] hover:border-[var(--color-warm-gray)]'}`}
+                {cartItems.length > 0 ? (
+                  /* ── Cart manager ── */
+                  <>
+                    <h2 className="text-xl font-bold text-[var(--color-obsidian)] mb-2" style={{ fontFamily: isAr ? 'var(--font-ar-heading)' : 'var(--font-en-heading)' }}>
+                      {isAr ? 'المنتجات المختارة للطلب' : 'Products in Your Quote List'}
+                    </h2>
+                    <p className="text-sm text-[var(--color-warm-gray)] mb-6">
+                      {isAr ? 'راجع المنتجات واحذف ما لا تريده، أو تصفح المزيد.' : 'Review your list, remove items, or browse for more products.'}
+                    </p>
+                    <div className="space-y-3 mb-6">
+                      {cartItems.map((item, i) => (
+                        <div key={item.id} className="flex items-center gap-4 border border-[var(--color-sand)] rounded-xl p-3 bg-[var(--color-marble-white)]">
+                          <span className="w-6 h-6 rounded-full bg-[var(--color-sand)] text-[var(--color-warm-gray)] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                          <img src={item.image || stoneImages[item.type]} alt={item.nameEn} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-[var(--color-obsidian)] truncate">{isAr ? item.nameAr : item.nameEn}</p>
+                            <p className="text-xs text-[var(--color-warm-gray)] capitalize">{item.type}</p>
+                          </div>
+                          <button type="button" onClick={() => removeFromCart(item.id)} className="text-[var(--color-warm-gray)] hover:text-red-500 transition-colors p-1 shrink-0" title="Remove">
+                            <X size={18} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <Link
+                      href={`/${locale}/products`}
+                      className="inline-flex items-center gap-2 text-sm text-[var(--color-deep-green)] hover:text-[var(--color-deep-green-hover)] font-medium underline underline-offset-2 mb-8"
                     >
-                      <img src={stoneImages[value]} alt={t(labelKey as Parameters<typeof t>[0])} className="w-full h-32 object-cover" />
-                      <div className="p-3 text-center">
-                        <span className="font-semibold text-[var(--color-obsidian)] text-sm">{t(labelKey as Parameters<typeof t>[0])}</span>
-                        {stoneType === value && <div className="mt-1 w-4 h-4 rounded-full bg-[var(--color-deep-green)] mx-auto flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-                <div>
-                  <label htmlFor="variety" className="block text-sm font-medium text-[var(--color-obsidian)] mb-1.5">{t('variety')}</label>
-                  <input id="variety" type="text" value={variety} onChange={e => setVariety(e.target.value)}
-                    placeholder={isAr ? 'مثل: رخام ماكرانا، جرانيت بلاك جالاكسي' : 'e.g. Makrana White Marble, Black Galaxy Granite'}
-                    className="w-full border border-[var(--color-sand)] rounded px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--color-gold)] bg-white" />
-                </div>
-                <div className="flex justify-end mt-8">
-                  <button type="button" disabled={!stoneType} onClick={() => setStep(2)} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
-                    {t('next')}
-                  </button>
-                </div>
+                      + {isAr ? 'إضافة منتج آخر' : 'Add another product'}
+                    </Link>
+                    <div className="flex justify-end">
+                      <button type="button" onClick={() => setStep(2)} className="btn-primary">
+                        {isAr ? `المتابعة (${cartItems.length} منتج)` : `Continue with ${cartItems.length} product${cartItems.length > 1 ? 's' : ''}`}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  /* ── Original stone type picker (no cart items) ── */
+                  <>
+                    <h2 className="text-xl font-bold text-[var(--color-obsidian)] mb-6" style={{ fontFamily: isAr ? 'var(--font-ar-heading)' : 'var(--font-en-heading)' }}>
+                      {t('step1_title')}
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                      {stoneTypes.map(({ value, labelKey }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setStoneType(value)}
+                          className={`rounded-lg overflow-hidden border-2 transition-all ${stoneType === value ? 'border-[var(--color-deep-green)] shadow-md' : 'border-[var(--color-sand)] hover:border-[var(--color-warm-gray)]'}`}
+                        >
+                          <img src={stoneImages[value]} alt={t(labelKey as Parameters<typeof t>[0])} className="w-full h-32 object-cover" />
+                          <div className="p-3 text-center">
+                            <span className="font-semibold text-[var(--color-obsidian)] text-sm">{t(labelKey as Parameters<typeof t>[0])}</span>
+                            {stoneType === value && <div className="mt-1 w-4 h-4 rounded-full bg-[var(--color-deep-green)] mx-auto flex items-center justify-center"><span className="text-white text-xs">✓</span></div>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                    <div>
+                      <label htmlFor="variety" className="block text-sm font-medium text-[var(--color-obsidian)] mb-1.5">{t('variety')}</label>
+                      <input id="variety" type="text" value={variety} onChange={e => setVariety(e.target.value)}
+                        placeholder={isAr ? 'مثل: رخام ماكرانا، جرانيت بلاك جالاكسي' : 'e.g. Makrana White Marble, Black Galaxy Granite'}
+                        className="w-full border border-[var(--color-sand)] rounded px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--color-gold)] bg-white" />
+                    </div>
+                    <div className="flex justify-end mt-8">
+                      <button type="button" disabled={!stoneType} onClick={() => setStep(2)} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+                        {t('next')}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

@@ -10,6 +10,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import WhatsAppButton from '@/components/layout/WhatsAppButton';
 import BackToTop from '@/components/shared/BackToTop';
+import { QuoteCartProvider } from '@/lib/quote-cart-context';
 
 type Props = {
   children: React.ReactNode;
@@ -157,11 +158,13 @@ export default async function LocaleLayout({ children, params }: Props) {
       </head>
       <body>
         <NextIntlClientProvider messages={messages} locale={locale}>
-          <Navbar />
-          <main>{children}</main>
-          <Footer social={theme.social} />
-          <WhatsAppButton />
-          <BackToTop />
+          <QuoteCartProvider>
+            <Navbar />
+            <main>{children}</main>
+            <Footer social={theme.social} />
+            <WhatsAppButton />
+            <BackToTop />
+          </QuoteCartProvider>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -72,14 +72,32 @@ function emailWrapper(title: string, badge: string, tableRows: string) {
 }
 
 export function buildQuoteEmail(data: {
-  stoneType: string; variety: string; quantity: string; dimensions: string;
+  products?: Array<{ type: string; nameEn: string }>;
+  // legacy single-product fields (kept for backwards compat)
+  stoneType?: string; variety?: string;
+  quantity: string; dimensions: string;
   thickness: string; finish: string; projectType: string; city: string;
   timeline: string; name: string; company: string; phone: string;
   email: string; contactMethod: string;
 }) {
+  // Build products section
+  const productList = data.products && data.products.length > 0
+    ? data.products
+    : data.stoneType
+      ? [{ type: data.stoneType, nameEn: data.variety || data.stoneType }]
+      : [];
+
+  const productsHtml = productList.length > 1
+    ? `<tr>
+        <td style="padding:8px 12px;font-weight:600;color:#555;vertical-align:top;border-bottom:1px solid #f0ece8;">Products Requested</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0ece8;">
+          ${productList.map((p, i) => `<div style="margin-bottom:4px;">${i + 1}. <strong>${p.nameEn}</strong> <span style="color:#8a8279;font-size:12px;text-transform:capitalize;">(${p.type})</span></div>`).join('')}
+        </td>
+      </tr>`
+    : row('Product', productList[0] ? `${productList[0].nameEn} (${productList[0].type})` : '');
+
   const rows =
-    row('Stone Type', data.stoneType) +
-    row('Variety / Spec', data.variety) +
+    productsHtml +
     row('Quantity (m²)', data.quantity) +
     row('Dimensions', data.dimensions) +
     row('Thickness', data.thickness) +
@@ -94,8 +112,12 @@ export function buildQuoteEmail(data: {
     row('Email', data.email) +
     row('Preferred Contact', data.contactMethod);
 
+  const productSummary = productList.length > 1
+    ? `${productList.length} Products`
+    : productList[0]?.nameEn || 'Stone';
+
   return {
-    subject: `New Quote Request — ${data.stoneType} — ${data.name}`,
+    subject: `New Quote Request — ${productSummary} — ${data.name}`,
     html: emailWrapper('New Quote Request', 'Quote', rows),
     replyTo: data.email || undefined,
   };

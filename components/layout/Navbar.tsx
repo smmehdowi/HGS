@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Globe, ChevronDown } from 'lucide-react';
+import { Menu, X, Globe, ChevronDown, ShoppingBag } from 'lucide-react';
+import { useQuoteCart } from '@/lib/quote-cart-context';
 
 const navLinks = [
   { key: 'home',     href: '/' },
@@ -24,6 +25,8 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef<HTMLDivElement>(null);
+  const { items: cartItems } = useQuoteCart();
+  const cartCount = cartItems.length;
   const isRtl = locale === 'ar';
 
   useEffect(() => {
@@ -159,12 +162,18 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* CTA */}
+            {/* CTA — Quote with cart badge */}
             <Link
               href={`/${locale}/quote`}
-              className="btn-primary text-sm py-2 px-4"
+              className="btn-primary text-sm py-2 px-4 flex items-center gap-2 relative"
             >
+              <ShoppingBag size={15} />
               {t('quote')}
+              {cartCount > 0 && (
+                <span className="absolute -top-2 -end-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center leading-none">
+                  {cartCount}
+                </span>
+              )}
             </Link>
           </div>
 
@@ -217,10 +226,16 @@ export default function Navbar() {
           ))}
           <Link
             href={`/${locale}/quote`}
-            className="btn-primary mt-6 justify-center text-center"
+            className="btn-primary mt-6 justify-center text-center flex items-center gap-2"
             onClick={() => setMenuOpen(false)}
           >
+            <ShoppingBag size={15} />
             {t('quote')}
+            {cartCount > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center leading-none ms-1">
+                {cartCount}
+              </span>
+            )}
           </Link>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MapPin, Layers } from 'lucide-react';
 import { StoneProduct } from '@/lib/admin-types';
+import AddToQuoteButton from '@/components/products/AddToQuoteButton';
 
 interface Props {
   products: StoneProduct[];
@@ -103,12 +104,10 @@ export default function PopularProducts({ products, locale }: Props) {
                   )}
                 </div>
 
-                <Link
-                  href={`/${locale}/quote?type=${product.category}&variety=${encodeURIComponent(product.nameEn)}`}
-                  className="btn-primary w-full justify-center text-sm py-2.5"
-                >
-                  {isAr ? 'طلب عرض سعر' : 'Request Quote'}
-                </Link>
+                <AddToQuoteButton
+                    item={{ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image ?? '' }}
+                    isAr={isAr}
+                  />
               </div>
             </article>
           ))}

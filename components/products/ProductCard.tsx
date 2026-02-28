@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
-import { MapPin, Layers } from 'lucide-react';
+import { MapPin, Layers, ShoppingBag, Check } from 'lucide-react';
 import type { StoneProduct } from '@/data/types';
+import { useQuoteCart } from '@/lib/quote-cart-context';
 
 type Props = { product: StoneProduct };
 
@@ -12,6 +13,8 @@ function discounted(price: number, pct: number) {
 export default function ProductCard({ product }: Props) {
   const locale = useLocale();
   const isAr = locale === 'ar';
+  const { add, remove, has } = useQuoteCart();
+  const inCart = has(product.id);
   const pct = product.discountPercent && product.discountPercent > 0 ? product.discountPercent : null;
   const hasPrice = product.priceFrom || product.priceTo;
 
@@ -140,12 +143,23 @@ export default function ProductCard({ product }: Props) {
         </div>
 
         {/* CTA */}
-        <Link
-          href={`/${locale}/quote?type=${product.category}&variety=${encodeURIComponent(product.nameEn)}`}
-          className="btn-primary w-full justify-center text-sm py-2.5"
+        <button
+          type="button"
+          onClick={() => inCart
+            ? remove(product.id)
+            : add({ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image })
+          }
+          className={`w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg font-semibold transition-all ${
+            inCart
+              ? 'bg-[var(--color-deep-green)] text-white hover:bg-[var(--color-deep-green-hover)]'
+              : 'btn-primary'
+          }`}
         >
-          {isAr ? 'طلب عرض سعر' : 'Request Quote'}
-        </Link>
+          {inCart ? <Check size={15} /> : <ShoppingBag size={15} />}
+          {inCart
+            ? (isAr ? '✓ أضيف للطلب' : '✓ Added to Quote')
+            : (isAr ? 'أضف للطلب' : 'Add to Quote')}
+        </button>
       </div>
     </article>
   );
