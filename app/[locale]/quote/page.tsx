@@ -342,10 +342,16 @@ function QuoteForm() {
                     </div>
                     <Link
                       href={`/${locale}/products`}
-                      className="inline-flex items-center gap-2 text-sm text-[var(--color-deep-green)] hover:text-[var(--color-deep-green-hover)] font-medium underline underline-offset-2 mb-8"
+                      className="inline-flex items-center gap-2 text-sm text-[var(--color-deep-green)] hover:text-[var(--color-deep-green-hover)] font-medium underline underline-offset-2 mb-4"
                     >
                       + {isAr ? 'إضافة منتج آخر' : 'Add another product'}
                     </Link>
+                    {/* VAT notice */}
+                    <p className="text-xs text-[var(--color-warm-gray)] bg-[var(--color-sand)]/50 rounded-lg px-3 py-2 mb-6">
+                      {isAr
+                        ? 'الأسعار الاسترشادية المعروضة تشمل ضريبة القيمة المضافة 15%. تخضع الأسعار النهائية للتأكيد من فريقنا.'
+                        : 'Indicative prices shown are VAT-inclusive (15% VAT already included). Final pricing will be confirmed by our team.'}
+                    </p>
                     <div className="flex justify-end">
                       <button type="button" onClick={() => setStep(3)} className="btn-primary">
                         {isAr ? `المتابعة (${cartItems.length} منتج)` : `Continue with ${cartItems.length} product${cartItems.length > 1 ? 's' : ''}`}

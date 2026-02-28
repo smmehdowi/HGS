@@ -2,11 +2,12 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 
 // Register Cairo font (includes Arabic + Latin glyphs) for bilingual PDF support
+// No version pin — jsDelivr resolves to the latest published @fontsource/cairo
 Font.register({
   family: 'Cairo',
   fonts: [
-    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo@5.1.1/files/cairo-arabic-400-normal.woff2', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo@5.1.1/files/cairo-arabic-700-normal.woff2', fontWeight: 700 },
+    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo/files/cairo-arabic-400-normal.woff2', fontWeight: 400 },
+    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo/files/cairo-arabic-700-normal.woff2', fontWeight: 700 },
   ],
 });
 
@@ -181,11 +182,12 @@ export function QuotePDF({ locale, quoteRef, date, customer, project, products, 
     return { ...p, qty, price, total: qty * price, displayName };
   });
 
-  const subtotal = lineItems.reduce((s, li) => s + li.total, 0);
-  const vat = Math.round(subtotal * vatPercent / 100);
-  const grandTotal = subtotal + vat;
-  const hasPrice = lineItems.some(li => li.price > 0);
-  const hasTotals = hasPrice && subtotal > 0;
+  // Prices are VAT-inclusive — extract VAT component rather than adding on top
+  const grandTotal = lineItems.reduce((s, li) => s + li.total, 0);
+  const subtotal   = Math.round(grandTotal / (1 + vatPercent / 100));
+  const vat        = grandTotal - subtotal;
+  const hasPrice   = lineItems.some(li => li.price > 0);
+  const hasTotals  = hasPrice && grandTotal > 0;
 
   return (
     <Document>

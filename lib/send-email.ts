@@ -42,12 +42,16 @@ export async function sendCustomerQuoteEmail(
   to: string,
   name: string,
   quoteRef: string,
-  pdfBuffer: Buffer,
+  pdfBuffer?: Buffer,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!process.env.RESEND_API_KEY) return { ok: false, error: 'RESEND_API_KEY not set' };
 
   const settings = await getEmailSettings();
   const fromName = settings.fromName || 'Himalayan Gulf Stones';
+
+  const attachmentNote = pdfBuffer
+    ? 'Please find your quote summary attached as a PDF.'
+    : 'Our team will prepare a detailed quote and send it to you shortly.';
 
   const html = `<!DOCTYPE html>
 <html>
@@ -61,7 +65,7 @@ export async function sendCustomerQuoteEmail(
     <div style="padding:28px 32px;">
       <h2 style="margin:0 0 12px;font-size:20px;color:#1a1a1a;">Thank you, ${name}!</h2>
       <p style="color:#555;line-height:1.6;margin:0 0 16px;">
-        Your quote request has been received. Please find your quote summary attached as a PDF.
+        Your quote request has been received. ${attachmentNote}
       </p>
       <div style="background:#f5f0eb;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
         <div style="font-size:12px;color:#8a8279;">Quote Reference</div>
@@ -86,7 +90,7 @@ export async function sendCustomerQuoteEmail(
     to: [to],
     subject: `Your Quote ${quoteRef} — Himalayan Gulf Stones`,
     html,
-    attachments: [{ filename: `${quoteRef}.pdf`, content: pdfBuffer }],
+    attachments: pdfBuffer ? [{ filename: `${quoteRef}.pdf`, content: pdfBuffer }] : undefined,
   });
 
   if (error) return { ok: false, error: error.message };

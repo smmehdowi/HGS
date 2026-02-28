@@ -73,9 +73,14 @@ export async function POST(request: NextRequest) {
   const adminResult = await sendEmail(adminEmailOpts);
   if (!adminResult.ok && adminResult.error) console.error('[quote] Admin email failed:', adminResult.error);
 
-  // 2. Customer email — if they provided an email and PDF was generated
-  if (data.email && pdfBuffer) {
-    const customerResult = await sendCustomerQuoteEmail(data.email, data.name ?? 'Customer', quoteRef, pdfBuffer);
+  // 2. Customer email — send whenever they provide an email; attach PDF only if generated
+  if (data.email) {
+    const customerResult = await sendCustomerQuoteEmail(
+      data.email,
+      data.name ?? 'Customer',
+      quoteRef,
+      pdfBuffer ?? undefined,
+    );
     if (!customerResult.ok) console.error('[quote] Customer email failed:', customerResult.error);
   }
 
