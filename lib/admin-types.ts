@@ -1,3 +1,10 @@
+export interface EmailSettings {
+  toEmail: string;
+  ccEmail: string;
+  fromName: string;
+  enabled: boolean;
+}
+
 export interface SocialLinks {
   tiktok: string;
   x: string;

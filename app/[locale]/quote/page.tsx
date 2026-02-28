@@ -78,8 +78,17 @@ export default function QuotePage() {
   const [email, setEmail]               = useState('');
   const [contactMethod, setContactMethod] = useState('whatsapp');
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    await fetch('/api/quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stoneType, variety, quantity, dimensions, thickness,
+        finish, projectType, city, timeline,
+        name, company, phone, email, contactMethod,
+      }),
+    });
     setSubmitted(true);
   }
 

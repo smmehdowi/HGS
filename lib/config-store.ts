@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection } from './admin-types';
+import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection, EmailSettings } from './admin-types';
 
 const CONFIG_DIR = path.join(process.cwd(), 'data', 'config');
 
@@ -102,4 +102,19 @@ export async function getHomeLayout(): Promise<HomeSection[]> {
 
 export async function saveHomeLayout(layout: HomeSection[]): Promise<void> {
   return writeJson('home-layout.json', layout);
+}
+
+const DEFAULT_EMAIL: EmailSettings = {
+  toEmail: '',
+  ccEmail: '',
+  fromName: 'Himalayan Gulf Stones',
+  enabled: false,
+};
+
+export async function getEmailSettings(): Promise<EmailSettings> {
+  return readJson<EmailSettings>('email.json', DEFAULT_EMAIL);
+}
+
+export async function saveEmailSettings(settings: EmailSettings): Promise<void> {
+  return writeJson('email.json', settings);
 }
