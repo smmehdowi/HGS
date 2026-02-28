@@ -112,6 +112,17 @@ const DEFAULT_EMAIL: EmailSettings = {
 };
 
 export async function getEmailSettings(): Promise<EmailSettings> {
+  // Env vars take precedence over JSON file — they survive Railway redeployments.
+  // Set ADMIN_EMAIL in Railway to enable admin notifications.
+  const toEmail = process.env.ADMIN_EMAIL?.trim() ?? '';
+  if (toEmail) {
+    return {
+      toEmail,
+      ccEmail:  process.env.ADMIN_CC_EMAIL?.trim()   ?? '',
+      fromName: process.env.ADMIN_FROM_NAME?.trim()  || 'Himalayan Gulf Stones',
+      enabled:  true,
+    };
+  }
   return readJson<EmailSettings>('email.json', DEFAULT_EMAIL);
 }
 
@@ -128,6 +139,19 @@ const DEFAULT_DAFTRA: DaftraSettings = {
 };
 
 export async function getDaftraSettings(): Promise<DaftraSettings> {
+  // Env vars take precedence over JSON file — they survive Railway redeployments.
+  // Set DAFTRA_API_KEY + DAFTRA_SUBDOMAIN in Railway to enable.
+  const subdomain = process.env.DAFTRA_SUBDOMAIN?.trim() ?? '';
+  const apiKey    = process.env.DAFTRA_API_KEY?.trim()    ?? '';
+  if (subdomain && apiKey) {
+    return {
+      enabled:      process.env.DAFTRA_ENABLED !== 'false', // default true when creds set
+      subdomain,
+      apiKey,
+      storeId:      parseInt(process.env.DAFTRA_STORE_ID ?? '1') || 1,
+      currencyCode: process.env.DAFTRA_CURRENCY?.trim() || 'SAR',
+    };
+  }
   return readJson<DaftraSettings>('daftra.json', DEFAULT_DAFTRA);
 }
 

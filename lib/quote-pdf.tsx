@@ -1,13 +1,29 @@
 import React from 'react';
+import path from 'path';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 
-// Register Cairo font (includes Arabic + Latin glyphs) for bilingual PDF support
-// No version pin — jsDelivr resolves to the latest published @fontsource/cairo
+// Load Cairo font from the locally-installed @fontsource/cairo package.
+// Using .woff (v1) for broadest fontkit compatibility.
+// Arabic subset covers U+0600+ Arabic characters; Latin subset covers A-Z, 0-9, punctuation.
+// When a character is not in the Arabic subset, @react-pdf/renderer falls back to
+// the Latin subset (registered under a separate family) or the built-in Helvetica.
+const _fontsDir = path.join(process.cwd(), 'node_modules', '@fontsource', 'cairo', 'files');
+
 Font.register({
   family: 'Cairo',
   fonts: [
-    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo/files/cairo-arabic-400-normal.woff2', fontWeight: 400 },
-    { src: 'https://cdn.jsdelivr.net/npm/@fontsource/cairo/files/cairo-arabic-700-normal.woff2', fontWeight: 700 },
+    { src: path.join(_fontsDir, 'cairo-arabic-400-normal.woff'), fontWeight: 400 },
+    { src: path.join(_fontsDir, 'cairo-arabic-700-normal.woff'), fontWeight: 700 },
+  ],
+});
+
+// Register the Latin subset as 'CairoLatin' — used explicitly for mixed content
+// (customer name, city, etc.) to ensure both Arabic and Latin glyphs are covered.
+Font.register({
+  family: 'CairoLatin',
+  fonts: [
+    { src: path.join(_fontsDir, 'cairo-latin-400-normal.woff'), fontWeight: 400 },
+    { src: path.join(_fontsDir, 'cairo-latin-700-normal.woff'), fontWeight: 700 },
   ],
 });
 
