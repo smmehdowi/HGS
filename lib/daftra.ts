@@ -7,14 +7,16 @@ async function daftraGet(subdomain: string, apiKey: string, path: string): Promi
   const url = `https://${subdomain}.daftra.com/api2/${path}`;
   const res = await fetch(url, {
     headers: { apikey: apiKey, 'Content-Type': 'application/json' },
-    // 10-second timeout via AbortController
     signal: AbortSignal.timeout(10_000),
   });
-  if (!res.ok) throw new Error(`Daftra GET ${path} → ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Daftra GET ${path} → ${res.status}: ${body}`);
+  }
   return res.json();
 }
 
-async function daftraPost(subdomain: string, apiKey: string, path: string, body: unknown): Promise<{ code: number; result: string; id?: number }> {
+async function daftraPost(subdomain: string, apiKey: string, path: string, body: unknown): Promise<Record<string, unknown>> {
   const url = `https://${subdomain}.daftra.com/api2/${path}`;
   const res = await fetch(url, {
     method: 'POST',
@@ -22,8 +24,13 @@ async function daftraPost(subdomain: string, apiKey: string, path: string, body:
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!res.ok) throw new Error(`Daftra POST ${path} → ${res.status}`);
-  return res.json();
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Daftra POST ${path} → ${res.status}: ${text}`);
+  }
+  const json = await res.json() as Record<string, unknown>;
+  console.log(`[daftra] POST ${path} response:`, JSON.stringify(json));
+  return json;
 }
 
 // ── Client ──────────────────────────────────────────────────────────────────
@@ -61,8 +68,9 @@ async function createOrFindClient(
     },
   });
 
-  if (!res.id) throw new Error('Daftra client creation returned no ID');
-  return res.id;
+  const id = res.id as number | undefined;
+  if (!id) throw new Error(`Daftra client creation returned no ID. Response: ${JSON.stringify(res)}`);
+  return id;
 }
 
 // ── Products ────────────────────────────────────────────────────────────────
@@ -90,7 +98,9 @@ async function ensureProductId(
       await saveDaftraProductMap(map);
       return existing;
     }
-  } catch { /* fall through to create */ }
+  } catch (e) {
+    console.warn('[daftra] product search failed, will try create:', e);
+  }
 
   // Create product in Daftra
   const res = await daftraPost(subdomain, apiKey, 'products.json', {
@@ -101,10 +111,11 @@ async function ensureProductId(
     },
   });
 
-  if (!res.id) throw new Error(`Daftra product creation failed for: ${nameEn}`);
-  map[productId] = res.id;
+  const id = res.id as number | undefined;
+  if (!id) throw new Error(`Daftra product creation failed for "${nameEn}". Response: ${JSON.stringify(res)}`);
+  map[productId] = id;
   await saveDaftraProductMap(map);
-  return res.id;
+  return id;
 }
 
 // ── Estimate ─────────────────────────────────────────────────────────────────
@@ -134,8 +145,9 @@ async function createEstimate(
     },
   });
 
-  if (!res.id) throw new Error('Daftra estimate creation returned no ID');
-  return res.id;
+  const id = res.id as number | undefined;
+  if (!id) throw new Error(`Daftra estimate creation returned no ID. Response: ${JSON.stringify(res)}`);
+  return id;
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -167,7 +179,7 @@ export async function submitQuoteToDaftra(
         const daftraProductId = await ensureProductId(
           settings.subdomain,
           settings.apiKey,
-          p.id || p.nameEn, // use nameEn as fallback key if id is missing
+          p.id || p.nameEn,
           p.nameEn,
           p.pricePerM2,
         );
@@ -194,7 +206,9 @@ export async function submitQuoteToDaftra(
 
     return { ok: true, estimateId };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[daftra] submitQuoteToDaftra failed:', msg);
+    return { ok: false, error: msg };
   }
 }
 

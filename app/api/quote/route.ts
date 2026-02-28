@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
   }));
 
   // ── Daftra path ────────────────────────────────────────────────────────────
+  let daftraError: string | undefined;
   const daftra = await getDaftraSettings();
   if (daftra.enabled && daftra.apiKey && daftra.subdomain) {
     const daftraResult = await submitQuoteToDaftra(
@@ -77,7 +78,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Daftra failed — log and fall through to PDF fallback
-    console.error('[quote] Daftra submission failed, falling back to PDF:', daftraResult.error);
+    daftraError = daftraResult.error;
+    console.error('[quote] Daftra submission failed, falling back to PDF:', daftraError);
   }
 
   // ── PDF fallback path ──────────────────────────────────────────────────────
@@ -130,5 +132,6 @@ export async function POST(request: NextRequest) {
     ok: true,
     quoteRef,
     pdfBase64: pdfBuffer ? pdfBuffer.toString('base64') : null,
+    ...(daftraError ? { daftraError } : {}),
   });
 }
