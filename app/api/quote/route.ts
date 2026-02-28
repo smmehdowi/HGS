@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import React from 'react';
 import { renderToBuffer } from '@react-pdf/renderer';
+import type { DocumentProps } from '@react-pdf/renderer';
 import { sendEmail, buildQuoteEmail, sendCustomerQuoteEmail } from '@/lib/send-email';
 import { QuotePDF } from '@/lib/quote-pdf';
 
@@ -37,25 +38,26 @@ export async function POST(request: NextRequest) {
   // Generate PDF buffer
   let pdfBuffer: Buffer | null = null;
   try {
-    pdfBuffer = await renderToBuffer(
-      React.createElement(QuotePDF, {
-        quoteRef,
-        date: formatDate(new Date()),
-        customer: {
-          name: data.name ?? '',
-          company: data.company ?? '',
-          phone: data.phone ?? '',
-          email: data.email ?? '',
-        },
-        project: {
-          type: data.projectType ?? '',
-          city: data.city ?? '',
-          timeline: data.timeline ?? '',
-        },
-        products: pdfProducts,
-        vatPercent: 15,
-      })
-    );
+    // QuotePDF returns <Document> at its root; cast needed because renderToBuffer
+    // expects ReactElement<DocumentProps> but createElement returns FunctionComponentElement<QuotePDFProps>
+    const pdfElement = React.createElement(QuotePDF, {
+      quoteRef,
+      date: formatDate(new Date()),
+      customer: {
+        name: data.name ?? '',
+        company: data.company ?? '',
+        phone: data.phone ?? '',
+        email: data.email ?? '',
+      },
+      project: {
+        type: data.projectType ?? '',
+        city: data.city ?? '',
+        timeline: data.timeline ?? '',
+      },
+      products: pdfProducts,
+      vatPercent: 15,
+    }) as React.ReactElement<DocumentProps>;
+    pdfBuffer = await renderToBuffer(pdfElement);
   } catch (e) {
     console.error('[quote] PDF generation failed:', e);
   }
