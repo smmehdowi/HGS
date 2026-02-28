@@ -13,8 +13,8 @@ function discounted(price: number, pct: number) {
 export default function ProductCard({ product }: Props) {
   const locale = useLocale();
   const isAr = locale === 'ar';
-  const { add, remove, has } = useQuoteCart();
-  const inCart = has(product.id);
+  const { add, count } = useQuoteCart();
+  const cartCount = count(product.id);
   const pct = product.discountPercent && product.discountPercent > 0 ? product.discountPercent : null;
   const hasPrice = product.priceFrom || product.priceTo;
 
@@ -145,19 +145,16 @@ export default function ProductCard({ product }: Props) {
         {/* CTA */}
         <button
           type="button"
-          onClick={() => inCart
-            ? remove(product.id)
-            : add({ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image })
-          }
+          onClick={() => add({ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image, pricePerM2: product.priceFrom })}
           className={`w-full flex items-center justify-center gap-2 text-sm py-2.5 rounded-lg font-semibold transition-all ${
-            inCart
+            cartCount > 0
               ? 'bg-[var(--color-deep-green)] text-white hover:bg-[var(--color-deep-green-hover)]'
               : 'btn-primary'
           }`}
         >
-          {inCart ? <Check size={15} /> : <ShoppingBag size={15} />}
-          {inCart
-            ? (isAr ? '✓ أضيف للطلب' : '✓ Added to Quote')
+          {cartCount > 0 ? <Check size={15} /> : <ShoppingBag size={15} />}
+          {cartCount > 0
+            ? (isAr ? `✓ في الطلب (${cartCount}) · أضف مرة أخرى` : `✓ In Quote (${cartCount}) · Add Again`)
             : (isAr ? 'أضف للطلب' : 'Add to Quote')}
         </button>
       </div>

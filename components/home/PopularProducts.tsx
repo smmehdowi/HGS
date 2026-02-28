@@ -105,7 +105,7 @@ export default function PopularProducts({ products, locale }: Props) {
                 </div>
 
                 <AddToQuoteButton
-                    item={{ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image ?? '' }}
+                    item={{ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image ?? '', pricePerM2: product.priceFrom }}
                     isAr={isAr}
                   />
               </div>

@@ -132,7 +132,7 @@ export default function DiscountedProducts({ products, locale }: Props) {
                   </div>
 
                   <AddToQuoteButton
-                    item={{ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image ?? '' }}
+                    item={{ id: product.id, type: product.category, nameEn: product.nameEn, nameAr: product.nameAr, image: product.image ?? '', pricePerM2: product.priceFrom ? discounted(product.priceFrom, pct) : undefined }}
                     isAr={isAr}
                   />
                 </div>

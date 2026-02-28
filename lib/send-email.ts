@@ -3,10 +3,16 @@ import { getEmailSettings } from './config-store';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+interface Attachment {
+  filename: string;
+  content: Buffer;
+}
+
 interface SendOptions {
   subject: string;
   html: string;
   replyTo?: string;
+  attachments?: Attachment[];
 }
 
 export async function sendEmail(opts: SendOptions): Promise<{ ok: boolean; error?: string }> {
@@ -25,6 +31,62 @@ export async function sendEmail(opts: SendOptions): Promise<{ ok: boolean; error
     replyTo: opts.replyTo,
     subject: opts.subject,
     html: opts.html,
+    attachments: opts.attachments,
+  });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function sendCustomerQuoteEmail(
+  to: string,
+  name: string,
+  quoteRef: string,
+  pdfBuffer: Buffer,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!process.env.RESEND_API_KEY) return { ok: false, error: 'RESEND_API_KEY not set' };
+
+  const settings = await getEmailSettings();
+  const fromName = settings.fromName || 'Himalayan Gulf Stones';
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f0eb;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);">
+    <div style="background:#0d5e37;padding:28px 32px;">
+      <div style="color:#fff;font-size:20px;font-weight:700;">Himalayan Gulf Stones</div>
+      <div style="color:#ffffff99;font-size:13px;margin-top:2px;">himalayangulfstones.com</div>
+    </div>
+    <div style="padding:28px 32px;">
+      <h2 style="margin:0 0 12px;font-size:20px;color:#1a1a1a;">Thank you, ${name}!</h2>
+      <p style="color:#555;line-height:1.6;margin:0 0 16px;">
+        Your quote request has been received. Please find your quote summary attached as a PDF.
+      </p>
+      <div style="background:#f5f0eb;border-radius:8px;padding:14px 18px;margin-bottom:20px;">
+        <div style="font-size:12px;color:#8a8279;">Quote Reference</div>
+        <div style="font-size:18px;font-weight:700;color:#0d5e37;">${quoteRef}</div>
+      </div>
+      <p style="color:#555;line-height:1.6;margin:0 0 16px;">
+        Our team will review your request and follow up with a detailed confirmation and final pricing within <strong>24 hours</strong>.
+      </p>
+      <p style="color:#8a8279;font-size:13px;margin:0;">
+        Himalayan Gulf Stones · himalayangulfstones.com
+      </p>
+    </div>
+    <div style="background:#f5f0eb;padding:14px 32px;font-size:12px;color:#8a8279;border-top:1px solid #e8ddd0;">
+      This email was sent because you submitted a quote request at himalayangulfstones.com
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const { error } = await resend.emails.send({
+    from: `${fromName} <onboarding@resend.dev>`,
+    to: [to],
+    subject: `Your Quote ${quoteRef} — Himalayan Gulf Stones`,
+    html,
+    attachments: [{ filename: `${quoteRef}.pdf`, content: pdfBuffer }],
   });
 
   if (error) return { ok: false, error: error.message };
@@ -72,7 +134,10 @@ function emailWrapper(title: string, badge: string, tableRows: string) {
 }
 
 export function buildQuoteEmail(data: {
-  products?: Array<{ type: string; nameEn: string }>;
+  products?: Array<{
+    type: string; nameEn: string;
+    quantity?: string; dimensions?: string; thickness?: string; finish?: string;
+  }>;
   // legacy single-product fields (kept for backwards compat)
   stoneType?: string; variety?: string;
   quantity: string; dimensions: string;
@@ -91,7 +156,18 @@ export function buildQuoteEmail(data: {
     ? `<tr>
         <td style="padding:8px 12px;font-weight:600;color:#555;vertical-align:top;border-bottom:1px solid #f0ece8;">Products Requested</td>
         <td style="padding:8px 12px;border-bottom:1px solid #f0ece8;">
-          ${productList.map((p, i) => `<div style="margin-bottom:4px;">${i + 1}. <strong>${p.nameEn}</strong> <span style="color:#8a8279;font-size:12px;text-transform:capitalize;">(${p.type})</span></div>`).join('')}
+          ${productList.map((p, i) => {
+            const specs = [
+              p.quantity    && `${p.quantity} m²`,
+              p.dimensions  && p.dimensions,
+              p.thickness   && p.thickness,
+              p.finish      && p.finish,
+            ].filter(Boolean).join(' · ');
+            return `<div style="margin-bottom:8px;padding:8px 10px;background:#faf9f7;border-radius:6px;border:1px solid #f0ece8;">
+              <div>${i + 1}. <strong>${p.nameEn}</strong> <span style="color:#8a8279;font-size:12px;text-transform:capitalize;">(${p.type})</span></div>
+              ${specs ? `<div style="color:#6b6460;font-size:12px;margin-top:3px;">${specs}</div>` : ''}
+            </div>`;
+          }).join('')}
         </td>
       </tr>`
     : row('Product', productList[0] ? `${productList[0].nameEn} (${productList[0].type})` : '');

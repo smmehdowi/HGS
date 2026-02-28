@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection, EmailSettings } from './admin-types';
+import { ThemeSettings, NewsArticle, CustomSection, StoneProduct, HomeSection, EmailSettings, WhatsAppSettings } from './admin-types';
 
 const CONFIG_DIR = path.join(process.cwd(), 'data', 'config');
 
@@ -117,4 +117,19 @@ export async function getEmailSettings(): Promise<EmailSettings> {
 
 export async function saveEmailSettings(settings: EmailSettings): Promise<void> {
   return writeJson('email.json', settings);
+}
+
+const DEFAULT_WHATSAPP: WhatsAppSettings = {
+  enabled: false,
+  phoneNumberId: '',
+  apiToken: '',
+  testPhone: '',
+};
+
+export async function getWhatsAppSettings(): Promise<WhatsAppSettings> {
+  return readJson<WhatsAppSettings>('whatsapp.json', DEFAULT_WHATSAPP);
+}
+
+export async function saveWhatsAppSettings(settings: WhatsAppSettings): Promise<void> {
+  return writeJson('whatsapp.json', settings);
 }

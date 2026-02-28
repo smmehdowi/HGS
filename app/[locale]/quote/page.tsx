@@ -4,7 +4,7 @@ import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
-import { CheckCircle, X, ShoppingBag } from 'lucide-react';
+import { CheckCircle, X, ShoppingBag, Download } from 'lucide-react';
 import { useQuoteCart } from '@/lib/quote-cart-context';
 
 // value = what gets submitted; labelKey = translation key for display
@@ -58,21 +58,25 @@ const stoneImages: Record<string, string> = {
   granite: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&q=80',
 };
 
+const inputCls = 'w-full border border-[var(--color-sand)] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[var(--color-gold)] bg-white';
+
 function QuoteForm() {
   const t = useTranslations('quote');
   const locale = useLocale();
   const isAr = locale === 'ar';
   const searchParams = useSearchParams();
-  const { items: cartItems, remove: removeFromCart, clear: clearCart } = useQuoteCart();
+  const { items: cartItems, remove: removeFromCart, clear: clearCart, updateSpecs } = useQuoteCart();
 
   // Pre-fill from product link (?type=slate&variety=Kota+Blue+Slate) — legacy single-product flow
   const paramType    = searchParams.get('type') ?? '';
   const paramVariety = searchParams.get('variety') ?? '';
 
   // Start at step 2 if: cart has items OR URL has a pre-selected product
+  // For cart flow, step 2 (global specs) is skipped — we go 1 → 3 → 4
   const hasPreSelection = cartItems.length > 0 || Boolean(paramType);
-  const [step, setStep]           = useState<Step>(hasPreSelection ? 2 : 1);
+  const [step, setStep]           = useState<Step>(hasPreSelection ? (cartItems.length > 0 ? 3 : 2) : 1);
   const [submitted, setSubmitted] = useState(false);
+  const [quoteResult, setQuoteResult] = useState<{ quoteRef: string; pdfBase64: string | null } | null>(null);
 
   // Single-product fields (used only when cart is empty and URL params are present)
   const [stoneType, setStoneType]         = useState(paramType);
@@ -90,16 +94,35 @@ function QuoteForm() {
   const [email, setEmail]                 = useState('');
   const [contactMethod, setContactMethod] = useState('whatsapp');
 
-  // Build the products list for the email: cart items take priority, else single-product from URL/step 1
+  // Build the products list for the email/PDF
   const products = cartItems.length > 0
-    ? cartItems.map(i => ({ type: i.type, nameEn: i.nameEn }))
+    ? cartItems.map(i => ({
+        type: i.type,
+        nameEn: i.nameEn,
+        quantity: i.specs?.quantity,
+        dimensions: i.specs?.dimensions,
+        thickness: i.specs?.thickness,
+        finish: i.specs?.finish,
+        pricePerM2: i.pricePerM2,
+      }))
     : stoneType
       ? [{ type: stoneType, nameEn: variety || stoneType }]
       : [];
 
+  function downloadPdf(base64: string, ref: string) {
+    try {
+      const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${ref}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    } catch { /* ignore */ }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await fetch('/api/quote', {
+    const res = await fetch('/api/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -108,7 +131,9 @@ function QuoteForm() {
         name, company, phone, email, contactMethod,
       }),
     });
+    const json = await res.json().catch(() => ({}));
     clearCart();
+    setQuoteResult({ quoteRef: json.quoteRef ?? '', pdfBase64: json.pdfBase64 ?? null });
     setSubmitted(true);
   }
 
@@ -121,8 +146,8 @@ function QuoteForm() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-marble-white)] pt-24">
-        <div className="text-center max-w-md mx-auto px-6">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-marble-white)] pt-24 pb-16" style={{ direction: isAr ? 'rtl' : 'ltr' }}>
+        <div className="text-center max-w-lg mx-auto px-6">
           <CheckCircle size={64} className="text-[var(--color-deep-green)] mx-auto mb-6" />
           <h1
             className="text-3xl font-bold text-[var(--color-obsidian)] mb-4"
@@ -130,7 +155,37 @@ function QuoteForm() {
           >
             {t('success_title')}
           </h1>
-          <p className="text-[var(--color-warm-gray)] leading-relaxed">{t('success')}</p>
+          <p className="text-[var(--color-warm-gray)] leading-relaxed mb-6">{t('success')}</p>
+
+          {quoteResult?.quoteRef && (
+            <div className="bg-[var(--color-deep-green)]/10 border border-[var(--color-deep-green)]/30 rounded-xl p-5 mb-6">
+              <p className="text-xs text-[var(--color-warm-gray)] mb-1">
+                {isAr ? 'رقم مرجعي للطلب' : 'Quote Reference'}
+              </p>
+              <p className="text-2xl font-bold text-[var(--color-deep-green)] tracking-wide font-mono">
+                {quoteResult.quoteRef}
+              </p>
+              <p className="text-xs text-[var(--color-warm-gray)] mt-2">
+                {isAr ? 'احتفظ بهذا الرقم للمتابعة مع فريقنا' : 'Keep this reference for follow-up with our team'}
+              </p>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            {quoteResult?.pdfBase64 && quoteResult.quoteRef && (
+              <button
+                type="button"
+                onClick={() => downloadPdf(quoteResult.pdfBase64!, quoteResult.quoteRef)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Download size={16} />
+                {isAr ? 'تحميل ملخص الطلب PDF' : 'Download Quote PDF'}
+              </button>
+            )}
+            <Link href={`/${locale}/products`} className="btn-outline !text-[var(--color-obsidian)] !border-[var(--color-sand)] hover:!bg-[var(--color-sand)] flex items-center gap-2">
+              {isAr ? 'تصفح المزيد من المنتجات' : 'Browse More Products'}
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -156,7 +211,7 @@ function QuoteForm() {
       <section className="py-14 bg-[var(--color-marble-white)]" style={{ direction: isAr ? 'rtl' : 'ltr' }}>
         <div className="container-site max-w-3xl">
 
-          {/* Cart summary bar — shown on steps 2-4 when cart has items */}
+          {/* Cart summary bar — shown on steps 3-4 when cart has items */}
           {cartItems.length > 0 && step > 1 && (
             <div className="mb-8 bg-[var(--color-deep-green)]/10 border border-[var(--color-deep-green)]/30 rounded-xl p-4">
               <div className="flex items-center justify-between mb-3">
@@ -170,10 +225,13 @@ function QuoteForm() {
               </div>
               <div className="flex flex-wrap gap-2">
                 {cartItems.map(item => (
-                  <div key={item.id} className="flex items-center gap-1.5 bg-white border border-[var(--color-sand)] rounded-lg px-2.5 py-1.5 text-sm">
+                  <div key={item.instanceId} className="flex items-center gap-1.5 bg-white border border-[var(--color-sand)] rounded-lg px-2.5 py-1.5 text-sm">
                     <img src={item.image || stoneImages[item.type]} alt={item.nameEn} className="w-6 h-6 rounded object-cover" />
                     <span className="font-medium text-[var(--color-obsidian)]">{isAr ? item.nameAr : item.nameEn}</span>
-                    <button type="button" onClick={() => removeFromCart(item.id)} className="text-[var(--color-warm-gray)] hover:text-red-500 ms-1">
+                    {item.specs?.dimensions && (
+                      <span className="text-[var(--color-warm-gray)] text-xs">· {item.specs.dimensions}</span>
+                    )}
+                    <button type="button" onClick={() => removeFromCart(item.instanceId)} className="text-[var(--color-warm-gray)] hover:text-red-500 ms-1">
                       <X size={13} />
                     </button>
                   </div>
@@ -205,26 +263,78 @@ function QuoteForm() {
             {step === 1 && (
               <div>
                 {cartItems.length > 0 ? (
-                  /* ── Cart manager ── */
+                  /* ── Cart manager with per-item specs ── */
                   <>
                     <h2 className="text-xl font-bold text-[var(--color-obsidian)] mb-2" style={{ fontFamily: isAr ? 'var(--font-ar-heading)' : 'var(--font-en-heading)' }}>
                       {isAr ? 'المنتجات المختارة للطلب' : 'Products in Your Quote List'}
                     </h2>
                     <p className="text-sm text-[var(--color-warm-gray)] mb-6">
-                      {isAr ? 'راجع المنتجات واحذف ما لا تريده، أو تصفح المزيد.' : 'Review your list, remove items, or browse for more products.'}
+                      {isAr
+                        ? 'راجع المنتجات واحذف ما لا تريده. يمكنك تحديد مواصفات مختلفة لكل منتج.'
+                        : 'Review your list and specify dimensions, thickness, and finish for each item separately.'}
                     </p>
-                    <div className="space-y-3 mb-6">
+                    <div className="space-y-4 mb-6">
                       {cartItems.map((item, i) => (
-                        <div key={item.id} className="flex items-center gap-4 border border-[var(--color-sand)] rounded-xl p-3 bg-[var(--color-marble-white)]">
-                          <span className="w-6 h-6 rounded-full bg-[var(--color-sand)] text-[var(--color-warm-gray)] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
-                          <img src={item.image || stoneImages[item.type]} alt={item.nameEn} className="w-14 h-14 rounded-lg object-cover shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[var(--color-obsidian)] truncate">{isAr ? item.nameAr : item.nameEn}</p>
-                            <p className="text-xs text-[var(--color-warm-gray)] capitalize">{item.type}</p>
+                        <div key={item.instanceId} className="border border-[var(--color-sand)] rounded-xl p-4 bg-[var(--color-marble-white)]">
+                          {/* Item header */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="w-6 h-6 rounded-full bg-[var(--color-sand)] text-[var(--color-warm-gray)] text-xs font-bold flex items-center justify-center shrink-0">{i + 1}</span>
+                            <img src={item.image || stoneImages[item.type]} alt={item.nameEn} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-[var(--color-obsidian)] truncate">{isAr ? item.nameAr : item.nameEn}</p>
+                              <p className="text-xs text-[var(--color-warm-gray)] capitalize">{item.type}</p>
+                            </div>
+                            <button type="button" onClick={() => removeFromCart(item.instanceId)} className="text-[var(--color-warm-gray)] hover:text-red-500 transition-colors p-1 shrink-0" title="Remove">
+                              <X size={18} />
+                            </button>
                           </div>
-                          <button type="button" onClick={() => removeFromCart(item.id)} className="text-[var(--color-warm-gray)] hover:text-red-500 transition-colors p-1 shrink-0" title="Remove">
-                            <X size={18} />
-                          </button>
+                          {/* Per-item spec fields */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div>
+                              <label className="text-xs text-[var(--color-warm-gray)] block mb-1">{isAr ? 'الكمية (م²)' : 'Qty (m²)'}</label>
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder="e.g. 50"
+                                value={item.specs?.quantity || ''}
+                                onChange={e => updateSpecs(item.instanceId, { ...item.specs, quantity: e.target.value })}
+                                className={inputCls}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[var(--color-warm-gray)] block mb-1">{isAr ? 'الأبعاد' : 'Dimensions'}</label>
+                              <input
+                                type="text"
+                                placeholder="60x60cm"
+                                value={item.specs?.dimensions || ''}
+                                onChange={e => updateSpecs(item.instanceId, { ...item.specs, dimensions: e.target.value })}
+                                className={inputCls}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[var(--color-warm-gray)] block mb-1">{isAr ? 'السماكة' : 'Thickness'}</label>
+                              <input
+                                type="text"
+                                placeholder="20mm"
+                                value={item.specs?.thickness || ''}
+                                onChange={e => updateSpecs(item.instanceId, { ...item.specs, thickness: e.target.value })}
+                                className={inputCls}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-[var(--color-warm-gray)] block mb-1">{isAr ? 'التشطيب' : 'Finish'}</label>
+                              <select
+                                value={item.specs?.finish || ''}
+                                onChange={e => updateSpecs(item.instanceId, { ...item.specs, finish: e.target.value })}
+                                className={inputCls}
+                              >
+                                <option value="">{isAr ? 'أي تشطيب' : 'Any'}</option>
+                                {finishTypes.map(({ value }) => (
+                                  <option key={value} value={value}>{value}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -235,7 +345,7 @@ function QuoteForm() {
                       + {isAr ? 'إضافة منتج آخر' : 'Add another product'}
                     </Link>
                     <div className="flex justify-end">
-                      <button type="button" onClick={() => setStep(2)} className="btn-primary">
+                      <button type="button" onClick={() => setStep(3)} className="btn-primary">
                         {isAr ? `المتابعة (${cartItems.length} منتج)` : `Continue with ${cartItems.length} product${cartItems.length > 1 ? 's' : ''}`}
                       </button>
                     </div>
@@ -278,7 +388,7 @@ function QuoteForm() {
               </div>
             )}
 
-            {/* Step 2 — Specifications */}
+            {/* Step 2 — Specifications (single-product flow only) */}
             {step === 2 && (
               <div>
                 <h2 className="text-xl font-bold text-[var(--color-obsidian)] mb-6" style={{ fontFamily: isAr ? 'var(--font-ar-heading)' : 'var(--font-en-heading)' }}>
@@ -339,7 +449,7 @@ function QuoteForm() {
                   </div>
                 </div>
                 <div className="flex justify-between mt-8">
-                  <button type="button" onClick={() => setStep(2)} className="btn-outline !text-[var(--color-obsidian)] !border-[var(--color-sand)] hover:!bg-[var(--color-sand)]">{t('back')}</button>
+                  <button type="button" onClick={() => cartItems.length > 0 ? setStep(1) : setStep(2)} className="btn-outline !text-[var(--color-obsidian)] !border-[var(--color-sand)] hover:!bg-[var(--color-sand)]">{t('back')}</button>
                   <button type="button" disabled={!city} onClick={() => setStep(4)} className="btn-primary disabled:opacity-40">{t('next')}</button>
                 </div>
               </div>
