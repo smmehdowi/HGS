@@ -1,3 +1,15 @@
+[variables]
+# Empty build-time defaults — real values are set in Railway Variables (runtime).
+# Declaring them here prevents "secret X: not found" errors during docker build.
+ADMIN_EMAIL = ""
+ADMIN_CC_EMAIL = ""
+ADMIN_FROM_NAME = ""
+DAFTRA_SUBDOMAIN = ""
+DAFTRA_API_KEY = ""
+DAFTRA_STORE_ID = ""
+DAFTRA_CURRENCY = ""
+DAFTRA_ENABLED = ""
+
 [phases.install]
 cmds = ["npm install"]
 
