@@ -36,6 +36,16 @@ yarn-error.log*
 # Runtime uploads — not tracked
 /public/uploads/
 
+# Local reference assets — images ignored (too large for git); PDFs/Excel committed
+/_assets/*.jpg
+/_assets/*.jpeg
+/_assets/*.png
+/_assets/*.webp
+/_assets/*.avif
+/_assets/*.gif
+/_assets/*.heic
+/_assets/*.mp4
+
 # Lock file — let server regenerate to avoid cross-platform sync issues
 package-lock.json
 
