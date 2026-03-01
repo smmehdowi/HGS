@@ -57,7 +57,36 @@ export async function POST(request: NextRequest) {
     pricePerM2:  p.pricePerM2,
   }));
 
-  // ── Daftra path ────────────────────────────────────────────────────────────
+  // ── 1. Generate PDF (always, regardless of Daftra) ───────────────────────
+  let pdfBuffer: Buffer | null = null;
+  try {
+    const { date: dateStr, time: timeStr } = formatDate(new Date(), locale);
+    pdfBuffer = await renderToBuffer(
+      React.createElement(QuotePDF, {
+        locale,
+        quoteRef,
+        date: dateStr,
+        time: timeStr,
+        customer: {
+          name:    data.name    ?? '',
+          company: data.company ?? '',
+          phone:   data.phone   ?? '',
+          email:   data.email   ?? '',
+        },
+        project: {
+          type:     data.projectType ?? '',
+          city:     data.city        ?? '',
+          timeline: data.timeline    ?? '',
+        },
+        products,
+        vatPercent: 15,
+      }) as React.ReactElement<DocumentProps>,
+    );
+  } catch (e) {
+    console.error('[quote] PDF generation failed:', e);
+  }
+
+  // ── 2. Submit to Daftra if configured (non-blocking — emails sent regardless) ──
   let daftraError: string | undefined;
   const daftra = await getDaftraSettings();
   if (daftra.enabled && daftra.apiKey && daftra.subdomain) {
@@ -77,64 +106,20 @@ export async function POST(request: NextRequest) {
       products,
       quoteRef,
     );
-
-    if (daftraResult.ok) {
-      // Admin email — no PDF attachment in Daftra mode
-      const adminResult = await sendEmail(buildQuoteEmail(data));
-      if (!adminResult.ok && adminResult.error) console.error('[quote] Admin email failed:', adminResult.error);
-
-      // Customer confirmation email (no PDF — Daftra manages the quote document)
-      if (data.email) {
-        const customerResult = await sendCustomerQuoteEmail(data.email, data.name ?? 'Customer', quoteRef);
-        if (!customerResult.ok) console.error('[quote] Customer email failed:', customerResult.error);
-      }
-
-      return NextResponse.json({ ok: true, quoteRef, pdfBase64: null });
+    if (!daftraResult.ok) {
+      daftraError = daftraResult.error;
+      console.error('[quote] Daftra submission failed:', daftraError);
     }
-
-    // Daftra failed — log and fall through to PDF fallback
-    daftraError = daftraResult.error;
-    console.error('[quote] Daftra submission failed, falling back to PDF:', daftraError);
   }
 
-  // ── PDF fallback path ──────────────────────────────────────────────────────
-  let pdfBuffer: Buffer | null = null;
-  try {
-    // QuotePDF returns <Document> at its root; cast required due to @react-pdf/renderer type constraints
-    const { date: dateStr, time: timeStr } = formatDate(new Date(), locale);
-    const pdfElement = React.createElement(QuotePDF, {
-      locale,
-      quoteRef,
-      date: dateStr,
-      time: timeStr,
-      customer: {
-        name:    data.name    ?? '',
-        company: data.company ?? '',
-        phone:   data.phone   ?? '',
-        email:   data.email   ?? '',
-      },
-      project: {
-        type:     data.projectType ?? '',
-        city:     data.city        ?? '',
-        timeline: data.timeline    ?? '',
-      },
-      products,
-      vatPercent: 15,
-    }) as React.ReactElement<DocumentProps>;
-    pdfBuffer = await renderToBuffer(pdfElement);
-  } catch (e) {
-    console.error('[quote] PDF generation failed:', e);
-  }
-
-  // Admin email — with PDF attached if generated
-  const emailOpts     = buildQuoteEmail(data);
+  // ── 3. Send emails (always, with PDF attached if generated) ───────────────
+  const emailOpts      = buildQuoteEmail(data);
   const adminEmailOpts = pdfBuffer
     ? { ...emailOpts, attachments: [{ filename: `${quoteRef}.pdf`, content: pdfBuffer }] }
     : emailOpts;
   const adminResult = await sendEmail(adminEmailOpts);
   if (!adminResult.ok && adminResult.error) console.error('[quote] Admin email failed:', adminResult.error);
 
-  // Customer email — send whenever they provide an email; attach PDF only if generated
   if (data.email) {
     const customerResult = await sendCustomerQuoteEmail(
       data.email,
