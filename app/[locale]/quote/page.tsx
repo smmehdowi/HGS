@@ -6,6 +6,10 @@ import { useTranslations, useLocale } from 'next-intl';
 import Link from 'next/link';
 import { CheckCircle, X, ShoppingBag, Download } from 'lucide-react';
 import { useQuoteCart } from '@/lib/quote-cart-context';
+import { marbleProducts } from '@/data/marble-products';
+import { graniteProducts } from '@/data/granite-products';
+import { slateProducts } from '@/data/slate-products';
+import type { StoneProduct } from '@/data/types';
 
 // value = what gets submitted; labelKey = translation key for display
 const stoneTypes = [
@@ -58,6 +62,12 @@ const stoneImages: Record<string, string> = {
   granite: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400&q=80',
 };
 
+const productsByType: Record<string, StoneProduct[]> = {
+  slate:   slateProducts,
+  marble:  marbleProducts,
+  granite: graniteProducts,
+};
+
 const inputCls = 'w-full border border-[var(--color-sand)] rounded px-2.5 py-1.5 text-xs focus:outline-none focus:border-[var(--color-gold)] bg-white';
 
 function QuoteForm() {
@@ -77,6 +87,10 @@ function QuoteForm() {
   const [step, setStep]           = useState<Step>(hasPreSelection ? (cartItems.length > 0 ? 1 : 2) : 1);
   const [submitted, setSubmitted] = useState(false);
   const [quoteResult, setQuoteResult] = useState<{ quoteRef: string; pdfBase64: string | null } | null>(null);
+
+  // Step 1 has two phases for the empty-cart flow: 'type' (stone category) → 'product' (specific product)
+  const [stepPhase, setStepPhase]             = useState<'type' | 'product'>(paramType ? 'product' : 'type');
+  const [selectedProduct, setSelectedProduct] = useState<StoneProduct | null>(null);
 
   // Single-product fields (used only when cart is empty and URL params are present)
   const [stoneType, setStoneType]         = useState(paramType);
@@ -107,7 +121,12 @@ function QuoteForm() {
         pricePerM2: i.pricePerM2,
       }))
     : stoneType
-      ? [{ type: stoneType, nameEn: variety || stoneType, nameAr: variety || stoneType }]
+      ? [{
+          type: stoneType,
+          nameEn: selectedProduct?.nameEn || variety || stoneType,
+          nameAr: selectedProduct?.nameAr || variety || stoneType,
+          pricePerM2: selectedProduct?.priceFrom,
+        }]
       : [];
 
   function downloadPdf(base64: string, ref: string) {
@@ -358,18 +377,18 @@ function QuoteForm() {
                       </button>
                     </div>
                   </>
-                ) : (
-                  /* ── Original stone type picker (no cart items) ── */
+                ) : stepPhase === 'type' ? (
+                  /* ── Phase A: Select stone category ── */
                   <>
                     <h2 className="text-xl font-bold text-[var(--color-obsidian)] mb-6" style={{ fontFamily: isAr ? 'var(--font-ar-heading)' : 'var(--font-en-heading)' }}>
                       {t('step1_title')}
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
                       {stoneTypes.map(({ value, labelKey }) => (
                         <button
                           key={value}
                           type="button"
-                          onClick={() => setStoneType(value)}
+                          onClick={() => { setStoneType(value); setSelectedProduct(null); }}
                           className={`rounded-lg overflow-hidden border-2 transition-all ${stoneType === value ? 'border-[var(--color-deep-green)] shadow-md' : 'border-[var(--color-sand)] hover:border-[var(--color-warm-gray)]'}`}
                         >
                           <img src={stoneImages[value]} alt={t(labelKey as Parameters<typeof t>[0])} className="w-full h-32 object-cover" />
@@ -380,14 +399,83 @@ function QuoteForm() {
                         </button>
                       ))}
                     </div>
-                    <div>
-                      <label htmlFor="variety" className="block text-sm font-medium text-[var(--color-obsidian)] mb-1.5">{t('variety')}</label>
-                      <input id="variety" type="text" value={variety} onChange={e => setVariety(e.target.value)}
-                        placeholder={isAr ? 'مثل: رخام ماكرانا، جرانيت بلاك جالاكسي' : 'e.g. Makrana White Marble, Black Galaxy Granite'}
-                        className="w-full border border-[var(--color-sand)] rounded px-3 py-2.5 text-sm focus:outline-none focus:border-[var(--color-gold)] bg-white" />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        disabled={!stoneType}
+                        onClick={() => setStepPhase('product')}
+                        className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {t('next')}
+                      </button>
                     </div>
-                    <div className="flex justify-end mt-8">
-                      <button type="button" disabled={!stoneType} onClick={() => setStep(2)} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+                  </>
+                ) : (
+                  /* ── Phase B: Select specific product from chosen category ── */
+                  <>
+                    <div className="flex items-center gap-3 mb-6">
+                      <button
+                        type="button"
+                        onClick={() => { setStepPhase('type'); setSelectedProduct(null); }}
+                        className="text-sm text-[var(--color-warm-gray)] hover:text-[var(--color-obsidian)] underline underline-offset-2"
+                      >
+                        ← {isAr ? 'تغيير النوع' : 'Change type'}
+                      </button>
+                      <span className="text-[var(--color-sand)]">|</span>
+                      <span className="text-sm font-semibold text-[var(--color-deep-green)] capitalize">{stoneType}</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-[var(--color-obsidian)] mb-2" style={{ fontFamily: isAr ? 'var(--font-ar-heading)' : 'var(--font-en-heading)' }}>
+                      {isAr ? 'اختر المنتج' : 'Select a Product'}
+                    </h2>
+                    <p className="text-sm text-[var(--color-warm-gray)] mb-6">
+                      {isAr ? 'اختر المنتج الذي تريد الاستفسار عنه' : 'Choose the product you would like to request a quote for'}
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+                      {(productsByType[stoneType] || []).map(product => {
+                        const isSelected = selectedProduct?.id === product.id;
+                        return (
+                          <button
+                            key={product.id}
+                            type="button"
+                            onClick={() => { setSelectedProduct(product); setVariety(product.nameEn); }}
+                            className={`rounded-xl overflow-hidden border-2 text-start transition-all ${isSelected ? 'border-[var(--color-deep-green)] shadow-md ring-1 ring-[var(--color-deep-green)]' : 'border-[var(--color-sand)] hover:border-[var(--color-warm-gray)]'}`}
+                          >
+                            <div className="relative">
+                              <img src={product.image} alt={product.nameEn} className="w-full h-24 object-cover" />
+                              {isSelected && (
+                                <div className="absolute top-2 end-2 w-6 h-6 rounded-full bg-[var(--color-deep-green)] flex items-center justify-center shadow">
+                                  <span className="text-white text-xs font-bold">✓</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-2.5">
+                              <p className="font-semibold text-[var(--color-obsidian)] text-xs leading-tight">
+                                {isAr ? product.nameAr : product.nameEn}
+                              </p>
+                              {product.priceFrom ? (
+                                <p className="text-[10px] text-[var(--color-warm-gray)] mt-0.5">
+                                  {isAr ? `من ${product.priceFrom} ر.س/م²` : `From SAR ${product.priceFrom}/m²`}
+                                </p>
+                              ) : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between">
+                      <button
+                        type="button"
+                        onClick={() => { setStepPhase('type'); setSelectedProduct(null); }}
+                        className="btn-outline !text-[var(--color-obsidian)] !border-[var(--color-sand)] hover:!bg-[var(--color-sand)]"
+                      >
+                        {t('back')}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!selectedProduct}
+                        onClick={() => setStep(2)}
+                        className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
                         {t('next')}
                       </button>
                     </div>
@@ -424,7 +512,7 @@ function QuoteForm() {
                   </div>
                 </div>
                 <div className="flex justify-between mt-8">
-                  <button type="button" onClick={() => setStep(1)} className="btn-outline !text-[var(--color-obsidian)] !border-[var(--color-sand)] hover:!bg-[var(--color-sand)]">{t('back')}</button>
+                  <button type="button" onClick={() => { setStepPhase('product'); setStep(1); }} className="btn-outline !text-[var(--color-obsidian)] !border-[var(--color-sand)] hover:!bg-[var(--color-sand)]">{t('back')}</button>
                   <button type="button" disabled={!quantity} onClick={() => setStep(3)} className="btn-primary disabled:opacity-40">{t('next')}</button>
                 </div>
               </div>
