@@ -50,8 +50,7 @@ const styles = StyleSheet.create({
   tdText:        { fontSize: 8.5 },
   tdSub:         { fontSize: 7.5, color: GRAY, marginTop: 1 },
   colNum:        { width: 18 },
-  colName:       { flex: 2 },
-  colSpecs:      { flex: 2 },
+  colName:       { flex: 1 },
   colQty:        { width: 45, textAlign: 'right' },
   colPrice:      { width: 60, textAlign: 'right' },
   colTotal:      { width: 65, textAlign: 'right' },
@@ -83,7 +82,7 @@ const LABELS = {
     project: 'Project Details',
     projectType: 'Project Type', city: 'City', timeline: 'Timeline',
     products: 'Products Requested',
-    product: 'Product', specs: 'Specifications',
+    product: 'Product', dimensions: 'Dimensions', thickness: 'Thickness', finish: 'Finish',
     qty: 'Qty m\u00B2', price: 'Price/m\u00B2', total: 'Total',
     pricing: 'Pricing Summary',
     subtotal: 'Subtotal (excl. VAT)', vat: 'VAT', grandTotal: 'Total (incl. VAT)',
@@ -100,7 +99,10 @@ const LABELS = {
     projectType: '\u0646\u0648\u0639 \u0627\u0644\u0645\u0634\u0631\u0648\u0639',
     city: '\u0627\u0644\u0645\u062f\u064a\u0646\u0629', timeline: '\u0627\u0644\u062c\u062f\u0648\u0644 \u0627\u0644\u0632\u0645\u0646\u064a',
     products: '\u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629',
-    product: '\u0627\u0644\u0645\u0646\u062a\u062c', specs: '\u0627\u0644\u0645\u0648\u0627\u0635\u0641\u0627\u062a',
+    product: '\u0627\u0644\u0645\u0646\u062a\u062c',
+    dimensions: '\u0627\u0644\u0623\u0628\u0639\u0627\u062f',
+    thickness: '\u0627\u0644\u0633\u0645\u0627\u0643\u0629',
+    finish: '\u0627\u0644\u062a\u0634\u0637\u064a\u0628',
     qty: '\u0627\u0644\u0643\u0645\u064a\u0629 \u0645\u00b2', price: '\u0627\u0644\u0633\u0639\u0631/\u0645\u00b2', total: '\u0627\u0644\u0645\u062c\u0645\u0648\u0639',
     pricing: '\u0645\u0644\u062e\u0635 \u0627\u0644\u062a\u0633\u0639\u064a\u0631',
     subtotal: '\u0627\u0644\u0645\u062c\u0645\u0648\u0639 \u0627\u0644\u0641\u0631\u0639\u064a (\u0628\u062f\u0648\u0646 \u0636\u0631\u064a\u0628\u0629)',
@@ -157,13 +159,14 @@ export interface QuotePDFProps {
   locale?: string;
   quoteRef: string;
   date: string;
+  time?: string;
   customer: { name: string; company: string; phone: string; email: string };
   project: { type: string; city: string; timeline: string };
   products: QuotePDFProduct[];
   vatPercent: number;
 }
 
-export function QuotePDF({ locale, quoteRef, date, customer, project, products, vatPercent }: QuotePDFProps) {
+export function QuotePDF({ locale, quoteRef, date, time, customer, project, products, vatPercent }: QuotePDFProps) {
   const isAr = locale === 'ar';
   const L    = isAr ? LABELS.ar : LABELS.en;
 
@@ -218,6 +221,7 @@ export function QuotePDF({ locale, quoteRef, date, customer, project, products, 
                 <Text style={styles.refText}>{quoteRef}</Text>
               </View>
               <Text style={[styles.dateText, isAr ? { textAlign: 'left' } : {}]}>{date}</Text>
+              {time ? <Text style={[styles.dateText, isAr ? { textAlign: 'left' } : {}]}>{time}</Text> : null}
             </View>
           </View>
 
@@ -241,37 +245,34 @@ export function QuotePDF({ locale, quoteRef, date, customer, project, products, 
           ) : null}
 
           {/* ── Products Table ──
-              LTR columns: [#] [Product] [Specs] [Qty] [Price] [Total]
-              RTL columns (row-reverse): [Total] [Price] [Qty] [Specs] [Product] [#]
-              So reading right-to-left: # | Product | Specs | Qty | Price | Total  ✓ */}
+              LTR columns: [#] [Product (+ details below)] [Qty] [Price] [Total]
+              RTL (row-reverse): [Total] [Price] [Qty] [Product] [#]  */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, afBold, isAr ? { fontFamily: 'Cairo', direction: 'rtl', textAlign: 'right' } : {}]}>{L.products}</Text>
             <View style={[styles.tableHeader, rowDir]}>
               <Text style={[styles.thText, styles.colNum]}>#</Text>
-              <Text style={[styles.thText, styles.colName,  af, rtlText]}>{L.product}</Text>
-              <Text style={[styles.thText, styles.colSpecs, af, rtlText]}>{L.specs}</Text>
-              <Text style={[styles.thText, styles.colQty,   af, numAlign]}>{L.qty}</Text>
+              <Text style={[styles.thText, styles.colName, af, rtlText]}>{L.product}</Text>
+              <Text style={[styles.thText, styles.colQty,  af, numAlign]}>{L.qty}</Text>
               {hasPrice ? <Text style={[styles.thText, styles.colPrice, af, numAlign]}>{L.price}</Text> : null}
               {hasPrice ? <Text style={[styles.thText, styles.colTotal, af, numAlign]}>{L.total}</Text> : null}
             </View>
-            {lineItems.map((item, i) => {
-              const specs = [item.dimensions, item.thickness, item.finish].filter(Boolean).join(' · ');
-              return (
-                <View key={i} style={[styles.tableRow, rowDir, i % 2 === 1 ? { backgroundColor: ROW_ALT } : {}]}>
-                  <Text style={[styles.tdText, styles.colNum]}>{i + 1}</Text>
-                  <View style={styles.colName}>
-                    <Text style={[styles.tdText, af, isAr ? { fontWeight: 700 } : { fontFamily: 'Helvetica-Bold' }, rtlText]}>
-                      {item.displayName}
-                    </Text>
-                    <Text style={[styles.tdSub, af, rtlText]}>{item.type}</Text>
-                  </View>
-                  <Text style={[styles.tdText, styles.colSpecs, { color: '#555' }, af, rtlText]}>{specs || '—'}</Text>
-                  <Text style={[styles.tdText, styles.colQty,   af, numAlign]}>{item.qty > 0 ? String(item.qty) : '—'}</Text>
-                  {hasPrice ? <Text style={[styles.tdText, styles.colPrice, af, numAlign]}>{item.price > 0 ? fmt(item.price) : L.tbd}</Text> : null}
-                  {hasPrice ? <Text style={[styles.tdText, styles.colTotal, af, numAlign]}>{item.total > 0 ? fmt(item.total) : L.tbd}</Text> : null}
+            {lineItems.map((item, i) => (
+              <View key={i} style={[styles.tableRow, rowDir, i % 2 === 1 ? { backgroundColor: ROW_ALT } : {}]}>
+                <Text style={[styles.tdText, styles.colNum]}>{i + 1}</Text>
+                <View style={[styles.colName, { paddingVertical: 1 }]}>
+                  <Text style={[styles.tdText, af, isAr ? { fontWeight: 700 } : { fontFamily: 'Helvetica-Bold' }, rtlText]}>
+                    {item.displayName}
+                  </Text>
+                  <Text style={[styles.tdSub, af, rtlText]}>{item.type}</Text>
+                  {item.dimensions ? <Text style={[styles.tdSub, af, rtlText]}>{L.dimensions}: {item.dimensions}</Text> : null}
+                  {item.thickness  ? <Text style={[styles.tdSub, af, rtlText]}>{L.thickness}: {item.thickness}</Text>   : null}
+                  {item.finish     ? <Text style={[styles.tdSub, af, rtlText]}>{L.finish}: {item.finish}</Text>          : null}
                 </View>
-              );
-            })}
+                <Text style={[styles.tdText, styles.colQty,   af, numAlign]}>{item.qty > 0 ? String(item.qty) : '—'}</Text>
+                {hasPrice ? <Text style={[styles.tdText, styles.colPrice, af, numAlign]}>{item.price > 0 ? fmt(item.price) : L.tbd}</Text> : null}
+                {hasPrice ? <Text style={[styles.tdText, styles.colTotal, af, numAlign]}>{item.total > 0 ? fmt(item.total) : L.tbd}</Text> : null}
+              </View>
+            ))}
           </View>
 
           {/* ── Pricing Summary ── */}

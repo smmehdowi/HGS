@@ -21,14 +21,18 @@ function generateQuoteRef(): string {
 const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 
-function formatDate(d: Date, locale: string): string {
-  const day     = d.getDate();
-  const month   = d.getMonth();
-  const year    = d.getFullYear();
-  const hh      = String(d.getHours()).padStart(2, '0');
-  const mm      = String(d.getMinutes()).padStart(2, '0');
-  const months  = locale === 'ar' ? MONTHS_AR : MONTHS_EN;
-  return `${day} ${months[month]} ${year}  ·  ${hh}:${mm}`;
+function formatDate(d: Date, locale: string): { date: string; time: string } {
+  // Asia/Riyadh is UTC+3, no DST — add 3 h to UTC to get local time
+  const riyadhMs = d.getTime() + 3 * 60 * 60 * 1000;
+  const r   = new Date(riyadhMs);
+  const day = r.getUTCDate();
+  const hh  = String(r.getUTCHours()).padStart(2, '0');
+  const mm  = String(r.getUTCMinutes()).padStart(2, '0');
+  const months = locale === 'ar' ? MONTHS_AR : MONTHS_EN;
+  return {
+    date: `${day} ${months[r.getUTCMonth()]} ${r.getUTCFullYear()}`,
+    time: `${hh}:${mm}`,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -97,10 +101,12 @@ export async function POST(request: NextRequest) {
   let pdfBuffer: Buffer | null = null;
   try {
     // QuotePDF returns <Document> at its root; cast required due to @react-pdf/renderer type constraints
+    const { date: dateStr, time: timeStr } = formatDate(new Date(), locale);
     const pdfElement = React.createElement(QuotePDF, {
       locale,
       quoteRef,
-      date: formatDate(new Date(), locale),
+      date: dateStr,
+      time: timeStr,
       customer: {
         name:    data.name    ?? '',
         company: data.company ?? '',
