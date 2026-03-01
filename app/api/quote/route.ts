@@ -16,11 +16,19 @@ function generateQuoteRef(): string {
   return `HGS-${date}-${rand}`;
 }
 
+// Manual date formatter — avoids relying on ar-SA ICU locale which is absent
+// in Railway's default Node.js (small-icu) build and renders as symbols.
+const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
 function formatDate(d: Date, locale: string): string {
-  const lang = locale === 'ar' ? 'ar-SA' : 'en-GB';
-  const datePart = d.toLocaleDateString(lang, { day: 'numeric', month: 'long', year: 'numeric' });
-  const timePart = d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
-  return `${datePart}  ·  ${timePart}`;
+  const day     = d.getDate();
+  const month   = d.getMonth();
+  const year    = d.getFullYear();
+  const hh      = String(d.getHours()).padStart(2, '0');
+  const mm      = String(d.getMinutes()).padStart(2, '0');
+  const months  = locale === 'ar' ? MONTHS_AR : MONTHS_EN;
+  return `${day} ${months[month]} ${year}  ·  ${hh}:${mm}`;
 }
 
 export async function POST(request: NextRequest) {
