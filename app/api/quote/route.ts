@@ -16,8 +16,11 @@ function generateQuoteRef(): string {
   return `HGS-${date}-${rand}`;
 }
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+function formatDate(d: Date, locale: string): string {
+  const lang = locale === 'ar' ? 'ar-SA' : 'en-GB';
+  const datePart = d.toLocaleDateString(lang, { day: 'numeric', month: 'long', year: 'numeric' });
+  const timePart = d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
+  return `${datePart}  ·  ${timePart}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -89,7 +92,7 @@ export async function POST(request: NextRequest) {
     const pdfElement = React.createElement(QuotePDF, {
       locale,
       quoteRef,
-      date: formatDate(new Date()),
+      date: formatDate(new Date(), locale),
       customer: {
         name:    data.name    ?? '',
         company: data.company ?? '',

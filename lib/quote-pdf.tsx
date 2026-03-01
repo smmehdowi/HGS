@@ -112,6 +112,32 @@ const LABELS = {
   },
 } as const;
 
+// Arabic translations for form dropdown values
+const PROJECT_TYPE_AR: Record<string, string> = {
+  'Residential Villa':   'فيلا سكنية',
+  'Apartment':           'شقة',
+  'Commercial Building': 'مبنى تجاري',
+  'Hotel / Hospitality': 'فندق / ضيافة',
+  'Mosque / Religious':  'مسجد / ديني',
+  'Government':          'حكومي',
+  'Landscaping':         'تنسيق حدائق',
+  'Other':               'أخرى',
+};
+
+const CITY_AR: Record<string, string> = {
+  'Riyadh':  'الرياض',
+  'Jeddah':  'جدة',
+  'Dammam':  'الدمام',
+  'Makkah':  'مكة المكرمة',
+  'Madinah': 'المدينة المنورة',
+  'Tabuk':   'تبوك',
+  'Abha':    'أبها',
+  'Khobar':  'الخبر',
+  'Jubail':  'الجبيل',
+  'Yanbu':   'ينبع',
+  'Other':   'أخرى',
+};
+
 function fmt(n: number): string {
   return `SAR ${n.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
@@ -208,9 +234,9 @@ export function QuotePDF({ locale, quoteRef, date, customer, project, products, 
           {(project.type || project.city || project.timeline) ? (
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, afBold, isAr ? { fontFamily: 'Cairo', direction: 'rtl', textAlign: 'right' } : {}]}>{L.project}</Text>
-              {project.type     ? <InfoRow label={L.projectType} value={project.type}     isAr={isAr} af={af} rowDir={rowDir} rtlText={rtlText} /> : null}
-              {project.city     ? <InfoRow label={L.city}        value={project.city}     isAr={isAr} af={af} rowDir={rowDir} rtlText={rtlText} /> : null}
-              {project.timeline ? <InfoRow label={L.timeline}    value={project.timeline} isAr={isAr} af={af} rowDir={rowDir} rtlText={rtlText} /> : null}
+              {project.type     ? <InfoRow label={L.projectType} value={isAr ? (PROJECT_TYPE_AR[project.type] || project.type) : project.type} isAr={isAr} af={af} rowDir={rowDir} rtlText={rtlText} /> : null}
+              {project.city     ? <InfoRow label={L.city}        value={isAr ? (CITY_AR[project.city] || project.city) : project.city}           isAr={isAr} af={af} rowDir={rowDir} rtlText={rtlText} /> : null}
+              {project.timeline ? <InfoRow label={L.timeline}    value={project.timeline}                                                         isAr={isAr} af={af} rowDir={rowDir} rtlText={rtlText} /> : null}
             </View>
           ) : null}
 
