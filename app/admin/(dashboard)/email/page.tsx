@@ -7,6 +7,7 @@ interface EmailSettings {
   toEmail: string;
   ccEmail: string;
   fromName: string;
+  fromEmail: string;
   enabled: boolean;
 }
 
@@ -15,6 +16,7 @@ export default function EmailSettingsPage() {
     toEmail: '',
     ccEmail: '',
     fromName: 'Himalayan Gulf Stones',
+    fromEmail: '',
     enabled: false,
   });
   const [loading, setLoading] = useState(true);
@@ -88,7 +90,7 @@ export default function EmailSettingsPage() {
       </div>
 
       {/* Resend setup info */}
-      <div className="bg-blue-900/30 border border-blue-700/40 rounded-lg p-4 mb-8 text-sm text-blue-200">
+      <div className="bg-blue-900/30 border border-blue-700/40 rounded-lg p-4 mb-4 text-sm text-blue-200">
         <p className="font-semibold mb-1">Setup required: Resend API key</p>
         <ol className="list-decimal list-inside space-y-1 text-blue-300">
           <li>Create a free account at <strong>resend.com</strong> (3,000 emails/month free)</li>
@@ -96,6 +98,16 @@ export default function EmailSettingsPage() {
           <li>In Railway → your service → Variables, add: <code className="bg-blue-900/50 px-1.5 py-0.5 rounded font-mono">RESEND_API_KEY = re_xxxxxxxxxxxx</code></li>
           <li>Enable emails below and save</li>
         </ol>
+      </div>
+
+      {/* Customer email warning */}
+      <div className="bg-amber-900/30 border border-amber-700/40 rounded-lg p-4 mb-8 text-sm text-amber-200">
+        <p className="font-semibold mb-1">⚠ Why customers may not receive confirmation emails</p>
+        <p className="text-amber-300">
+          Resend's free plan only allows sending to <strong>your own account email</strong> unless you verify a domain.
+          To send confirmation emails to customers, verify your domain in Resend (Dashboard → Domains → Add Domain),
+          then set the <strong>Sender Email</strong> field below to an address on that domain (e.g. <code className="bg-amber-900/50 px-1 rounded">noreply@himalayangulfstones.com</code>).
+        </p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
@@ -159,7 +171,23 @@ export default function EmailSettingsPage() {
               placeholder="Himalayan Gulf Stones"
               className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
             />
-            <p className="text-gray-500 text-xs mt-1">Emails are sent via Resend's shared domain until you verify your own domain at resend.com</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Sender Email
+              <span className="text-gray-500 font-normal ml-2">— verified domain address (required for customer emails)</span>
+            </label>
+            <input
+              type="email"
+              value={settings.fromEmail}
+              onChange={e => setSettings(s => ({ ...s, fromEmail: e.target.value }))}
+              placeholder="noreply@himalayangulfstones.com"
+              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+            <p className="text-gray-500 text-xs mt-1">
+              Leave blank to use Resend&apos;s shared domain (admin-only emails). Set to a verified domain email to also send confirmation emails to customers.
+            </p>
           </div>
         </div>
 

@@ -62,8 +62,12 @@ export default function DaftraSettingsPage() {
     });
     const json = await res.json();
     setTesting(false);
-    if (json.ok) showToast('success', 'Connection successful! Credentials are valid.');
-    else showToast('error', `Connection failed: ${json.error ?? 'Unknown error'}`);
+    if (json.ok) {
+      setSettings(s => ({ ...s, enabled: true }));
+      showToast('success', 'Connection successful! Daftra enabled — click Save Settings to confirm.');
+    } else {
+      showToast('error', `Connection failed: ${json.error ?? 'Unknown error'}`);
+    }
   }
 
   if (loading) return <div className="p-8 text-gray-400">Loading…</div>;

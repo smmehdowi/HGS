@@ -25,8 +25,9 @@ export async function sendEmail(opts: SendOptions): Promise<{ ok: boolean; error
   const to = [settings.toEmail];
   if (settings.ccEmail) to.push(settings.ccEmail);
 
+  const fromAddress = settings.fromEmail || 'onboarding@resend.dev';
   const { error } = await resend.emails.send({
-    from: `${settings.fromName} <onboarding@resend.dev>`,
+    from: `${settings.fromName} <${fromAddress}>`,
     to,
     replyTo: opts.replyTo,
     subject: opts.subject,
@@ -47,7 +48,8 @@ export async function sendCustomerQuoteEmail(
   if (!process.env.RESEND_API_KEY) return { ok: false, error: 'RESEND_API_KEY not set' };
 
   const settings = await getEmailSettings();
-  const fromName = settings.fromName || 'Himalayan Gulf Stones';
+  const fromName    = settings.fromName  || 'Himalayan Gulf Stones';
+  const fromAddress = settings.fromEmail || 'onboarding@resend.dev';
 
   const attachmentNote = pdfBuffer
     ? 'Please find your quote summary attached as a PDF.'
@@ -86,7 +88,7 @@ export async function sendCustomerQuoteEmail(
 </html>`;
 
   const { error } = await resend.emails.send({
-    from: `${fromName} <onboarding@resend.dev>`,
+    from: `${fromName} <${fromAddress}>`,
     to: [to],
     subject: `Your Quote ${quoteRef} — Himalayan Gulf Stones`,
     html,

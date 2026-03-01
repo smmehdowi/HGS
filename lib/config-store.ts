@@ -108,6 +108,7 @@ const DEFAULT_EMAIL: EmailSettings = {
   toEmail: '',
   ccEmail: '',
   fromName: 'Himalayan Gulf Stones',
+  fromEmail: '',
   enabled: false,
 };
 
@@ -118,9 +119,10 @@ export async function getEmailSettings(): Promise<EmailSettings> {
   if (toEmail) {
     return {
       toEmail,
-      ccEmail:  process.env.ADMIN_CC_EMAIL?.trim()   ?? '',
-      fromName: process.env.ADMIN_FROM_NAME?.trim()  || 'Himalayan Gulf Stones',
-      enabled:  true,
+      ccEmail:   process.env.ADMIN_CC_EMAIL?.trim()    ?? '',
+      fromName:  process.env.ADMIN_FROM_NAME?.trim()   || 'Himalayan Gulf Stones',
+      fromEmail: process.env.ADMIN_FROM_EMAIL?.trim()  ?? '',
+      enabled:   true,
     };
   }
   return readJson<EmailSettings>('email.json', DEFAULT_EMAIL);

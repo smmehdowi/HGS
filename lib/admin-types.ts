@@ -10,6 +10,7 @@ export interface EmailSettings {
   toEmail: string;
   ccEmail: string;
   fromName: string;
+  fromEmail: string;  // verified sender domain email — e.g. noreply@himalayangulfstones.com
   enabled: boolean;
 }
 

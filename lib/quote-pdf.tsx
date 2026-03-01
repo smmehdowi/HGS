@@ -2,28 +2,16 @@ import React from 'react';
 import path from 'path';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 
-// Load Cairo font from the locally-installed @fontsource/cairo package.
-// Using .woff (v1) for broadest fontkit compatibility.
-// Arabic subset covers U+0600+ Arabic characters; Latin subset covers A-Z, 0-9, punctuation.
-// When a character is not in the Arabic subset, @react-pdf/renderer falls back to
-// the Latin subset (registered under a separate family) or the built-in Helvetica.
-const _fontsDir = path.join(process.cwd(), 'node_modules', '@fontsource', 'cairo', 'files');
+// Full Cairo font (downloaded from Google Fonts) — covers Arabic + Latin in one file.
+// This avoids the subset-splitting issue of @fontsource/cairo and ensures proper
+// Arabic shaping (letter connections) alongside Latin characters (numbers, SAR, etc.)
+const _fontsDir = path.join(process.cwd(), 'public', 'fonts');
 
 Font.register({
   family: 'Cairo',
   fonts: [
-    { src: path.join(_fontsDir, 'cairo-arabic-400-normal.woff'), fontWeight: 400 },
-    { src: path.join(_fontsDir, 'cairo-arabic-700-normal.woff'), fontWeight: 700 },
-  ],
-});
-
-// Register the Latin subset as 'CairoLatin' — used explicitly for mixed content
-// (customer name, city, etc.) to ensure both Arabic and Latin glyphs are covered.
-Font.register({
-  family: 'CairoLatin',
-  fonts: [
-    { src: path.join(_fontsDir, 'cairo-latin-400-normal.woff'), fontWeight: 400 },
-    { src: path.join(_fontsDir, 'cairo-latin-700-normal.woff'), fontWeight: 700 },
+    { src: path.join(_fontsDir, 'cairo-400.ttf'), fontWeight: 400 },
+    { src: path.join(_fontsDir, 'cairo-700.ttf'), fontWeight: 700 },
   ],
 });
 
@@ -187,9 +175,10 @@ export function QuotePDF({ locale, quoteRef, date, customer, project, products, 
   const isAr = locale === 'ar';
   const L = isAr ? LABELS.ar : LABELS.en;
 
-  // Font helpers — Cairo covers both Arabic and Latin characters
-  const af = isAr ? { fontFamily: 'Cairo', fontWeight: 400 } : {};
-  const afBold = isAr ? { fontFamily: 'Cairo', fontWeight: 700 } : {};
+  // Font + direction helpers — full Cairo font covers Arabic + Latin characters
+  // direction:'rtl' ensures Arabic characters render right-to-left (no letter crossing)
+  const af = isAr ? { fontFamily: 'Cairo' as const, fontWeight: 400 as const, direction: 'rtl' as const } : {};
+  const afBold = isAr ? { fontFamily: 'Cairo' as const, fontWeight: 700 as const, direction: 'rtl' as const } : {};
 
   const lineItems = products.map(p => {
     const qty = parseFloat(p.quantity || '0') || 0;
