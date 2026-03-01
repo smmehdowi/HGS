@@ -3,30 +3,59 @@ import { getDaftraProductMap, saveDaftraProductMap } from './config-store';
 
 // ── HTTP helpers ────────────────────────────────────────────────────────────
 
+function makeAbortSignal(ms: number): AbortSignal {
+  // AbortController is universally supported; avoids AbortSignal.timeout() compatibility edge cases
+  const ctrl = new AbortController();
+  setTimeout(() => ctrl.abort(), ms);
+  return ctrl.signal;
+}
+
+function networkErrMsg(url: string, err: unknown): string {
+  if (err instanceof Error) {
+    // Include the underlying cause (e.g. ENOTFOUND, ECONNREFUSED, CERT_ERR)
+    const cause = (err as Error & { cause?: unknown }).cause;
+    const causeStr = cause instanceof Error ? ` (${cause.message})` : cause ? ` (${String(cause)})` : '';
+    return `Network error reaching ${url}: ${err.message}${causeStr}`;
+  }
+  return `Network error reaching ${url}: ${String(err)}`;
+}
+
 async function daftraGet(subdomain: string, apiKey: string, path: string): Promise<unknown> {
   const url = `https://${subdomain}.daftra.com/api2/${path}`;
-  const res = await fetch(url, {
-    headers: { apikey: apiKey, 'Content-Type': 'application/json' },
-    signal: AbortSignal.timeout(10_000),
-  });
+  console.log(`[daftra] GET ${url}`);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { apikey: apiKey },
+      signal: makeAbortSignal(15_000),
+    });
+  } catch (err) {
+    throw new Error(networkErrMsg(url, err));
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`Daftra GET ${path} → ${res.status}: ${body}`);
+    throw new Error(`Daftra GET ${path} → HTTP ${res.status}: ${body}`);
   }
   return res.json();
 }
 
 async function daftraPost(subdomain: string, apiKey: string, path: string, body: unknown): Promise<Record<string, unknown>> {
   const url = `https://${subdomain}.daftra.com/api2/${path}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { apikey: apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(10_000),
-  });
+  console.log(`[daftra] POST ${url}`);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { apikey: apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: makeAbortSignal(15_000),
+    });
+  } catch (err) {
+    throw new Error(networkErrMsg(url, err));
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`Daftra POST ${path} → ${res.status}: ${text}`);
+    throw new Error(`Daftra POST ${path} → HTTP ${res.status}: ${text}`);
   }
   const json = await res.json() as Record<string, unknown>;
   console.log(`[daftra] POST ${path} response:`, JSON.stringify(json));
