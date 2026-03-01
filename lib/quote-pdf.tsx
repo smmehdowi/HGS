@@ -51,9 +51,12 @@ const styles = StyleSheet.create({
   tdSub:         { fontSize: 7.5, color: GRAY, marginTop: 1 },
   colNum:        { width: 18 },
   colName:       { flex: 1 },
-  colQty:        { width: 45, textAlign: 'right' },
-  colPrice:      { width: 60, textAlign: 'right' },
-  colTotal:      { width: 65, textAlign: 'right' },
+  colDim:        { width: 50 },
+  colThick:      { width: 38 },
+  colFinish:     { width: 50 },
+  colQty:        { width: 38, textAlign: 'right' },
+  colPrice:      { width: 55, textAlign: 'right' },
+  colTotal:      { width: 58, textAlign: 'right' },
   totalsBox:     { alignItems: 'flex-end', marginTop: 8 },
   totalsRow:     { flexDirection: 'row', marginBottom: 3 },
   totalsLabel:   { width: 110, textAlign: 'right', color: GRAY, fontSize: 8.5, paddingRight: 6 },
@@ -81,8 +84,9 @@ const LABELS = {
     name: 'Name', company: 'Company', phone: 'Phone', email: 'Email',
     project: 'Project Details',
     projectType: 'Project Type', city: 'City', timeline: 'Timeline',
+    dateLabel: 'Date', timeLabel: 'Time',
     products: 'Products Requested',
-    product: 'Product', dimensions: 'Dimensions', thickness: 'Thickness', finish: 'Finish',
+    product: 'Product', dimensions: 'Dim.', thickness: 'Thick.', finish: 'Finish',
     qty: 'Qty m\u00B2', price: 'Price/m\u00B2', total: 'Total',
     pricing: 'Pricing Summary',
     subtotal: 'Subtotal (excl. VAT)', vat: 'VAT', grandTotal: 'Total (incl. VAT)',
@@ -98,6 +102,7 @@ const LABELS = {
     project: '\u062a\u0641\u0627\u0635\u064a\u0644 \u0627\u0644\u0645\u0634\u0631\u0648\u0639',
     projectType: '\u0646\u0648\u0639 \u0627\u0644\u0645\u0634\u0631\u0648\u0639',
     city: '\u0627\u0644\u0645\u062f\u064a\u0646\u0629', timeline: '\u0627\u0644\u062c\u062f\u0648\u0644 \u0627\u0644\u0632\u0645\u0646\u064a',
+    dateLabel: '\u0627\u0644\u062a\u0627\u0631\u064a\u062e', timeLabel: '\u0627\u0644\u0648\u0642\u062a',
     products: '\u0627\u0644\u0645\u0646\u062a\u062c\u0627\u062a \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629',
     product: '\u0627\u0644\u0645\u0646\u062a\u062c',
     dimensions: '\u0627\u0644\u0623\u0628\u0639\u0627\u062f',
@@ -220,8 +225,8 @@ export function QuotePDF({ locale, quoteRef, date, time, customer, project, prod
               <View style={styles.refBox}>
                 <Text style={styles.refText}>{quoteRef}</Text>
               </View>
-              <Text style={[styles.dateText, isAr ? { textAlign: 'left' } : {}]}>{date}</Text>
-              {time ? <Text style={[styles.dateText, isAr ? { textAlign: 'left' } : {}]}>{time}</Text> : null}
+              <Text style={[styles.dateText, af, isAr ? { textAlign: 'left' } : {}]}>{L.dateLabel}: {date}</Text>
+              {time ? <Text style={[styles.dateText, af, isAr ? { textAlign: 'left' } : {}]}>{L.timeLabel}: {time}</Text> : null}
             </View>
           </View>
 
@@ -251,24 +256,27 @@ export function QuotePDF({ locale, quoteRef, date, time, customer, project, prod
             <Text style={[styles.sectionTitle, afBold, isAr ? { fontFamily: 'Cairo', direction: 'rtl', textAlign: 'right' } : {}]}>{L.products}</Text>
             <View style={[styles.tableHeader, rowDir]}>
               <Text style={[styles.thText, styles.colNum]}>#</Text>
-              <Text style={[styles.thText, styles.colName, af, rtlText]}>{L.product}</Text>
-              <Text style={[styles.thText, styles.colQty,  af, numAlign]}>{L.qty}</Text>
+              <Text style={[styles.thText, styles.colName,   af, rtlText]}>{L.product}</Text>
+              <Text style={[styles.thText, styles.colDim,    af, rtlText]}>{L.dimensions}</Text>
+              <Text style={[styles.thText, styles.colThick,  af, rtlText]}>{L.thickness}</Text>
+              <Text style={[styles.thText, styles.colFinish, af, rtlText]}>{L.finish}</Text>
+              <Text style={[styles.thText, styles.colQty,    af, numAlign]}>{L.qty}</Text>
               {hasPrice ? <Text style={[styles.thText, styles.colPrice, af, numAlign]}>{L.price}</Text> : null}
               {hasPrice ? <Text style={[styles.thText, styles.colTotal, af, numAlign]}>{L.total}</Text> : null}
             </View>
             {lineItems.map((item, i) => (
               <View key={i} style={[styles.tableRow, rowDir, i % 2 === 1 ? { backgroundColor: ROW_ALT } : {}]}>
                 <Text style={[styles.tdText, styles.colNum]}>{i + 1}</Text>
-                <View style={[styles.colName, { paddingVertical: 1 }]}>
+                <View style={styles.colName}>
                   <Text style={[styles.tdText, af, isAr ? { fontWeight: 700 } : { fontFamily: 'Helvetica-Bold' }, rtlText]}>
                     {item.displayName}
                   </Text>
                   <Text style={[styles.tdSub, af, rtlText]}>{item.type}</Text>
-                  {item.dimensions ? <Text style={[styles.tdSub, af, rtlText]}>{L.dimensions}: {item.dimensions}</Text> : null}
-                  {item.thickness  ? <Text style={[styles.tdSub, af, rtlText]}>{L.thickness}: {item.thickness}</Text>   : null}
-                  {item.finish     ? <Text style={[styles.tdSub, af, rtlText]}>{L.finish}: {item.finish}</Text>          : null}
                 </View>
-                <Text style={[styles.tdText, styles.colQty,   af, numAlign]}>{item.qty > 0 ? String(item.qty) : '—'}</Text>
+                <Text style={[styles.tdText, styles.colDim,    af, rtlText]}>{item.dimensions || '—'}</Text>
+                <Text style={[styles.tdText, styles.colThick,  af, rtlText]}>{item.thickness  || '—'}</Text>
+                <Text style={[styles.tdText, styles.colFinish, af, rtlText]}>{item.finish     || '—'}</Text>
+                <Text style={[styles.tdText, styles.colQty,    af, numAlign]}>{item.qty > 0 ? String(item.qty) : '—'}</Text>
                 {hasPrice ? <Text style={[styles.tdText, styles.colPrice, af, numAlign]}>{item.price > 0 ? fmt(item.price) : L.tbd}</Text> : null}
                 {hasPrice ? <Text style={[styles.tdText, styles.colTotal, af, numAlign]}>{item.total > 0 ? fmt(item.total) : L.tbd}</Text> : null}
               </View>
