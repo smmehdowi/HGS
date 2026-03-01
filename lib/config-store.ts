@@ -143,7 +143,8 @@ const DEFAULT_DAFTRA: DaftraSettings = {
 export async function getDaftraSettings(): Promise<DaftraSettings> {
   // Env vars take precedence over JSON file — they survive Railway redeployments.
   // Set DAFTRA_API_KEY + DAFTRA_SUBDOMAIN in Railway to enable.
-  const subdomain = process.env.DAFTRA_SUBDOMAIN?.trim() ?? '';
+  // Strip full domain if user pastes "mycompany.daftra.com" instead of "mycompany"
+  const subdomain = (process.env.DAFTRA_SUBDOMAIN?.trim() ?? '').replace(/\.daftra\.com.*$/i, '');
   const apiKey    = process.env.DAFTRA_API_KEY?.trim()    ?? '';
   if (subdomain && apiKey) {
     return {
