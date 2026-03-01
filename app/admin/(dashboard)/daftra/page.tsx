@@ -133,7 +133,7 @@ export default function DaftraSettingsPage() {
                 <input
                   type="text"
                   value={settings.subdomain}
-                  onChange={e => setSettings(s => ({ ...s, subdomain: e.target.value.trim() }))}
+                  onChange={e => setSettings(s => ({ ...s, subdomain: e.target.value.trim().replace(/\.daftra\.com.*$/i, '') }))}
                   placeholder="mycompany"
                   className="flex-1 bg-gray-900 border border-gray-700 rounded-l-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
