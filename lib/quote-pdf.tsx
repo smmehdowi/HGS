@@ -1,6 +1,7 @@
 import React from 'react';
 import path from 'path';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import type { Style } from '@react-pdf/types';
 
 const _fontsDir = path.join(process.cwd(), 'public', 'fonts');
 
@@ -289,7 +290,7 @@ export function QuotePDF({ locale, quoteRef, date, customer, project, products, 
 // Reusable info row — label on right / value on left in Arabic
 function InfoRow({ label, value, isAr, af, rowDir, rtlText }: {
   label: string; value: string; isAr: boolean;
-  af: object; rowDir: object; rtlText: object;
+  af: Style; rowDir: Style; rtlText: Style;
 }) {
   return (
     <View style={[styles.infoRow, rowDir]}>
