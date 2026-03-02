@@ -69,14 +69,22 @@ async function daftraPost(subdomain: string, apiKey: string, path: string, body:
 //   { data: { Client: { id: 123 } } }       (nested in data.ModelName)
 // Try all locations so the code works regardless of which one Daftra uses.
 function extractId(res: Record<string, unknown>): number | undefined {
-  if (typeof res.id === 'number') return res.id;
+  const toNum = (v: unknown): number | undefined => {
+    if (typeof v === 'number') return v || undefined;
+    if (typeof v === 'string' && v) { const n = parseInt(v, 10); return isNaN(n) ? undefined : n; }
+    return undefined;
+  };
+  const top = toNum(res.id);
+  if (top) return top;
   const data = res.data as Record<string, unknown> | undefined;
   if (!data) return undefined;
-  if (typeof data.id === 'number') return data.id;
+  const d = toNum(data.id);
+  if (d) return d;
   // look one level deeper inside data (e.g. data.Client.id, data.Product.id)
   for (const val of Object.values(data)) {
-    if (val && typeof val === 'object' && typeof (val as Record<string,unknown>).id === 'number') {
-      return (val as Record<string,unknown>).id as number;
+    if (val && typeof val === 'object') {
+      const n = toNum((val as Record<string,unknown>).id);
+      if (n) return n;
     }
   }
   return undefined;
