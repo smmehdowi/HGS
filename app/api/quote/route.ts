@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       }) as React.ReactElement<DocumentProps>,
     );
   } catch (e) {
-    console.error('[quote] PDF generation failed:', e);
+    console.error('[quote] PDF generation failed:', e instanceof Error ? e.stack : e);
   }
 
   // ── 2. Submit to Daftra if configured (non-blocking — emails sent regardless) ──

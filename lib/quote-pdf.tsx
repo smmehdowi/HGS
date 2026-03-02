@@ -188,8 +188,8 @@ export function QuotePDF({ locale, quoteRef, date, time, customer, project, prod
   const lineItems = products.map(p => {
     const qty  = parseFloat(p.quantity || '0') || 0;
     const price = p.pricePerM2 || 0;
-    const displayName = isAr && p.nameAr ? p.nameAr : p.nameEn;
-    return { ...p, qty, price, total: qty * price, displayName };
+    const displayName = (isAr && p.nameAr ? p.nameAr : p.nameEn) ?? '';
+    return { ...p, type: p.type ?? '', qty, price, total: qty * price, displayName };
   });
 
   const grandTotal = lineItems.reduce((s, li) => s + li.total, 0);
