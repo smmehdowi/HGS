@@ -97,15 +97,17 @@ async function createOrFindClient(
   apiKey: string,
   customer: { name: string; email: string; phone: string; company: string },
 ): Promise<number> {
-  // Search by email if provided
+  // Search by email if provided — then verify the returned record actually matches,
+  // because Daftra may ignore the conditions filter and return all clients.
   if (customer.email) {
     try {
       const search = await daftraGet(
         subdomain, apiKey,
         `clients.json?conditions[email]=${encodeURIComponent(customer.email)}&limit=1`,
-      ) as { data?: Array<{ Client: { id: number } }> };
-      const existing = search?.data?.[0]?.Client?.id;
-      if (existing) return existing;
+      ) as { data?: Array<{ Client: { id: number; email?: string } }> };
+      const found = search?.data?.[0]?.Client;
+      console.log('[daftra] client search result:', JSON.stringify(found));
+      if (found?.id && found.email === customer.email) return found.id;
     } catch { /* fall through to create */ }
   }
 
@@ -143,17 +145,19 @@ async function ensureProductId(
   const map = await getDaftraProductMap();
   if (map[productId]) return map[productId];
 
-  // Search Daftra by name
+  // Search Daftra by name — then verify the returned record actually matches,
+  // because Daftra may ignore the conditions filter and return all products.
   try {
     const search = await daftraGet(
       subdomain, apiKey,
       `products.json?conditions[name]=${encodeURIComponent(nameEn)}&limit=1`,
-    ) as { data?: Array<{ Product: { id: number } }> };
-    const existing = search?.data?.[0]?.Product?.id;
-    if (existing) {
-      map[productId] = existing;
+    ) as { data?: Array<{ Product: { id: number; name?: string } }> };
+    const found = search?.data?.[0]?.Product;
+    console.log('[daftra] product search result for', JSON.stringify(nameEn), ':', JSON.stringify(found));
+    if (found?.id && found.name === nameEn) {
+      map[productId] = found.id;
       await saveDaftraProductMap(map);
-      return existing;
+      return found.id;
     }
   } catch (e) {
     console.warn('[daftra] product search failed, will try create:', e);
