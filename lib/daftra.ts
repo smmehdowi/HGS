@@ -172,6 +172,7 @@ async function ensureProductId(
 async function createEstimate(
   settings: DaftraSettings,
   clientId: number,
+  clientEmail: string,
   items: Array<{ daftraProductId: number; quantity: number; unitPrice: number; description: string }>,
   notes: string,
 ): Promise<number> {
@@ -180,6 +181,7 @@ async function createEstimate(
   const res = await daftraPost(settings.subdomain, settings.apiKey, 'estimates.json', {
     Estimate: {
       client_id:     clientId,
+      client_email:  clientEmail || undefined, // required by Daftra when send_email is active
       store_id:      settings.storeId,
       currency_code: settings.currencyCode || 'SAR',
       date:          today,
@@ -252,7 +254,7 @@ export async function submitQuoteToDaftra(
     const notes = [`Ref: ${quoteRef}`, ...projectParts].join('\n');
 
     // 4. Create estimate
-    const estimateId = await createEstimate(settings, clientId, lineItems, notes);
+    const estimateId = await createEstimate(settings, clientId, customer.email, lineItems, notes);
 
     return { ok: true, estimateId };
   } catch (err) {
