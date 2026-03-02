@@ -62,6 +62,26 @@ async function daftraPost(subdomain: string, apiKey: string, path: string, body:
   return json;
 }
 
+// ── ID extraction ─────────────────────────────────────────────────────────
+// Daftra API v2 is inconsistent — the created record ID may appear at:
+//   { id: 123 }                             (top-level)
+//   { data: { id: 123 } }                   (nested in data)
+//   { data: { Client: { id: 123 } } }       (nested in data.ModelName)
+// Try all locations so the code works regardless of which one Daftra uses.
+function extractId(res: Record<string, unknown>): number | undefined {
+  if (typeof res.id === 'number') return res.id;
+  const data = res.data as Record<string, unknown> | undefined;
+  if (!data) return undefined;
+  if (typeof data.id === 'number') return data.id;
+  // look one level deeper inside data (e.g. data.Client.id, data.Product.id)
+  for (const val of Object.values(data)) {
+    if (val && typeof val === 'object' && typeof (val as Record<string,unknown>).id === 'number') {
+      return (val as Record<string,unknown>).id as number;
+    }
+  }
+  return undefined;
+}
+
 // ── Client ──────────────────────────────────────────────────────────────────
 
 async function createOrFindClient(
@@ -97,7 +117,7 @@ async function createOrFindClient(
     },
   });
 
-  const id = res.id as number | undefined;
+  const id = extractId(res);
   if (!id) throw new Error(`Daftra client creation returned no ID. Response: ${JSON.stringify(res)}`);
   return id;
 }
@@ -140,7 +160,7 @@ async function ensureProductId(
     },
   });
 
-  const id = res.id as number | undefined;
+  const id = extractId(res);
   if (!id) throw new Error(`Daftra product creation failed for "${nameEn}". Response: ${JSON.stringify(res)}`);
   map[productId] = id;
   await saveDaftraProductMap(map);
@@ -175,7 +195,7 @@ async function createEstimate(
     },
   });
 
-  const id = res.id as number | undefined;
+  const id = extractId(res);
   if (!id) throw new Error(`Daftra estimate creation returned no ID. Response: ${JSON.stringify(res)}`);
   return id;
 }
