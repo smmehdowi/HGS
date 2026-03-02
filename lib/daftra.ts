@@ -164,6 +164,7 @@ async function createEstimate(
       currency_code: settings.currencyCode || 'SAR',
       date:          today,
       draft:         0,
+      send_email:    0, // we send our own email with PDF; don't let Daftra send one
       notes,
       InvoiceItem: items.map(i => ({
         product_id:  i.daftraProductId,
