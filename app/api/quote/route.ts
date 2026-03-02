@@ -120,15 +120,16 @@ export async function POST(request: NextRequest) {
   const adminResult = await sendEmail(adminEmailOpts);
   if (!adminResult.ok && adminResult.error) console.error('[quote] Admin email failed:', adminResult.error);
 
-  if (data.email) {
-    const customerResult = await sendCustomerQuoteEmail(
-      data.email,
-      data.name ?? 'Customer',
-      quoteRef,
-      pdfBuffer ?? undefined,
-    );
-    if (!customerResult.ok) console.error('[quote] Customer email failed:', customerResult.error);
-  }
+  // Customer email disabled — Resend requires domain verification before sending to external addresses
+  // if (data.email) {
+  //   const customerResult = await sendCustomerQuoteEmail(
+  //     data.email,
+  //     data.name ?? 'Customer',
+  //     quoteRef,
+  //     pdfBuffer ?? undefined,
+  //   );
+  //   if (!customerResult.ok) console.error('[quote] Customer email failed:', customerResult.error);
+  // }
 
   return NextResponse.json({
     ok: true,
